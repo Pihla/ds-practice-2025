@@ -14,24 +14,29 @@ import grpc
 from concurrent import futures
 
 # Create a class to define the server functions, derived from
-# fraud_detection_pb2_grpc.HelloServiceServicer
-class HelloService(fraud_detection_grpc.HelloServiceServicer):
-    # Create an RPC function to say hello
-    def SayHello(self, request, context):
-        # Create a HelloResponse object
-        response = fraud_detection.HelloResponse()
-        # Set the greeting field of the response object
-        response.greeting = "Hello, " + request.name
-        # Print the greeting message
-        print(response.greeting)
+# fraud_detection_pb2_grpc.FraudDetectionServiceServicer
+class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
+    # Create an RPC function to detect fraud
+    def FraudDetection(self, request, context):
+        # Create a FraudDetectionResponse object
+        response = fraud_detection.FraudDetectionResponse()
+        # Set the fields of the response object
+        if 0 < request.amount < 50:
+            response.is_valid = True
+            response.message = f"Order is not fraudulent. (nr of items: {request.amount})"
+        else:
+            response.is_valid = False
+            response.message = f"Order is fraudulent. Too many items ({request.amount})."
+        # Print the message
+        print(response.message)
         # Return the response object
         return response
 
 def serve():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
-    # Add HelloService
-    fraud_detection_grpc.add_HelloServiceServicer_to_server(HelloService(), server)
+    # Add FraudDetectionService
+    fraud_detection_grpc.add_FraudDetectionServiceServicer_to_server(FraudDetectionService(), server)
     # Listen on port 50051
     port = "50051"
     server.add_insecure_port("[::]:" + port)

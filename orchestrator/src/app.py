@@ -12,28 +12,35 @@ sys.path.insert(0, fraud_detection_grpc_path)
 import fraud_detection_pb2 as fraud_detection
 import fraud_detection_pb2_grpc as fraud_detection_grpc
 
+# Set up suggestions
+''' TODO: gives TypeError: Couldn't build proto file into descriptor pool: duplicate symbol 'hello.HelloRequest'
+suggestions_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/suggestions'))
+sys.path.insert(0, suggestions_grpc_path)
+import suggestions_pb2 as suggestions
+import suggestions_pb2_grpc as suggestions_grpc
+'''
 # Set up transaction verification
 transaction_verification_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/transaction_verification'))
 sys.path.insert(0, transaction_verification_grpc_path)
 import transaction_verification_pb2 as transaction_verification
 import transaction_verification_pb2_grpc as transaction_verification_grpc
 
-# Set up suggestions
-suggestions_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/suggestions'))
-sys.path.insert(0, suggestions_grpc_path)
-import suggestions_pb2 as suggestions
-import suggestions_pb2_grpc as suggestions_grpc
 
 import grpc
 
-def greet(name='you'):
+def detect_fraud(data):
     # Establish a connection with the fraud-detection gRPC service.
     with grpc.insecure_channel('fraud_detection:50051') as channel:
         # Create a stub object.
-        stub = fraud_detection_grpc.HelloServiceStub(channel)
+        stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
+
+        amount = 0
+        for item in data["items"]:
+            amount += item["quantity"]
         # Call the service through the stub object.
-        response = stub.SayHello(fraud_detection.HelloRequest(name=name))
-    return response.greeting
+        response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(amount=amount))
+        print(response)
+    return response
 
 # Import Flask.
 # Flask is a web framework for Python.
@@ -52,10 +59,10 @@ CORS(app, resources={r'/*': {'origins': '*'}})
 @app.route('/', methods=['GET'])
 def index():
     """
-    Responds with 'Hello, [name]' when a GET request is made to '/' endpoint.
+    Responds with 'Hello!' when a GET request is made to '/' endpoint.
     """
-    # Test the fraud-detection gRPC service.
-    response = greet(name='orchestrator')
+    print("LOG: Received GET REQUEST")
+    response = "Hello!"
     # Return the response.
     return response
 
@@ -65,11 +72,15 @@ def checkout():
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
     # Get request object data to json
+    print("LOG: Received POST REQUEST /checkout")
     request_data = json.loads(request.data)
     # Print request object data
-    print("Request Data:", request_data.get('items'))
+    print("LOG: POST REQUEST Data:", request_data)
+    print("LOG: Fraud detection in progress")
+    fraud_detection_response = detect_fraud(request_data)
+    print("LOG: Fraud detection finished")
 
-    # Dummy response following the provided YAML specification for the bookstore
+    # Dummy response
     order_status_response = {
         'orderId': '12345',
         'status': 'Order Approved',
@@ -78,6 +89,11 @@ def checkout():
             {'bookId': '456', 'title': 'The Second Best Book', 'author': 'Author 2'}
         ]
     }
+
+    if fraud_detection_response.is_valid:
+        order_status_response["status"] = "Order Approved"
+    else:
+        order_status_response["status"] = f"Order not approved. \n{fraud_detection_response.message}"
 
     return order_status_response
 
