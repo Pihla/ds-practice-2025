@@ -13,12 +13,10 @@ import fraud_detection_pb2 as fraud_detection
 import fraud_detection_pb2_grpc as fraud_detection_grpc
 
 # Set up suggestions
-''' TODO: gives TypeError: Couldn't build proto file into descriptor pool: duplicate symbol 'hello.HelloRequest'
 suggestions_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/suggestions'))
 sys.path.insert(0, suggestions_grpc_path)
 import suggestions_pb2 as suggestions
 import suggestions_pb2_grpc as suggestions_grpc
-'''
 # Set up transaction verification
 transaction_verification_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/transaction_verification'))
 sys.path.insert(0, transaction_verification_grpc_path)
@@ -39,6 +37,16 @@ def detect_fraud(data):
             amount += item["quantity"]
         # Call the service through the stub object.
         response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(amount=amount))
+        print(response)
+    return response
+
+def suggest_books(data):
+    with grpc.insecure_channel('suggestions:50053') as channel:
+        # Create a stub object.
+        stub = suggestions_grpc.SuggestionsServiceStub(channel)
+        bookId = "100" # dummy bookId
+        # Call the service through the stub object.
+        response = stub.Suggest(suggestions.SuggestionsRequest(bookId=bookId))
         print(response)
     return response
 
@@ -92,6 +100,12 @@ def checkout():
 
     if fraud_detection_response.is_valid:
         order_status_response["status"] = "Order Approved"
+        print("LOG: Getting suggestions.")
+        suggestions_response = suggest_books(request_data)
+        order_status_response["suggestedBooks"] = [
+            {"bookId": book.bookId, "title": book.title, "author": book.author}
+            for book in suggestions_response.suggestedBooks
+        ]
     else:
         order_status_response["status"] = f"Order not approved. \n{fraud_detection_response.message}"
 

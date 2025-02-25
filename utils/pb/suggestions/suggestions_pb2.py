@@ -14,17 +14,19 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11suggestions.proto\x12\x05hello\"\x1c\n\x0cHelloRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\"!\n\rHelloResponse\x12\x10\n\x08greeting\x18\x01 \x01(\t2E\n\x0cHelloService\x12\x35\n\x08SayHello\x12\x13.hello.HelloRequest\x1a\x14.hello.HelloResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11suggestions.proto\x12\x0bsuggestions\"5\n\x04\x42ook\x12\x0e\n\x06\x62ookId\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x03 \x01(\t\"$\n\x12SuggestionsRequest\x12\x0e\n\x06\x62ookId\x18\x01 \x01(\t\"@\n\x13SuggestionsResponse\x12)\n\x0esuggestedBooks\x18\x01 \x03(\x0b\x32\x11.suggestions.Book2b\n\x12SuggestionsService\x12L\n\x07Suggest\x12\x1f.suggestions.SuggestionsRequest\x1a .suggestions.SuggestionsResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'suggestions_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_HELLOREQUEST']._serialized_start=28
-  _globals['_HELLOREQUEST']._serialized_end=56
-  _globals['_HELLORESPONSE']._serialized_start=58
-  _globals['_HELLORESPONSE']._serialized_end=91
-  _globals['_HELLOSERVICE']._serialized_start=93
-  _globals['_HELLOSERVICE']._serialized_end=162
+  _globals['_BOOK']._serialized_start=34
+  _globals['_BOOK']._serialized_end=87
+  _globals['_SUGGESTIONSREQUEST']._serialized_start=89
+  _globals['_SUGGESTIONSREQUEST']._serialized_end=125
+  _globals['_SUGGESTIONSRESPONSE']._serialized_start=127
+  _globals['_SUGGESTIONSRESPONSE']._serialized_end=191
+  _globals['_SUGGESTIONSSERVICE']._serialized_start=193
+  _globals['_SUGGESTIONSSERVICE']._serialized_end=291
 # @@protoc_insertion_point(module_scope)

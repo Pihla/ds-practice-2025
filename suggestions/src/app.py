@@ -14,24 +14,22 @@ import grpc
 from concurrent import futures
 
 # Create a class to define the server functions, derived from
-# transaction_verification_pb2_grpc.HelloServiceServicer
-class HelloService(suggestions_grpc.HelloServiceServicer):
-    # Create an RPC function to say hello
-    def SayHello(self, request, context):
-        # Create a HelloResponse object
-        response = suggestions.HelloResponse()
-        # Set the greeting field of the response object
-        response.greeting = "Hello, " + request.name
-        # Print the greeting message
-        print(response.greeting)
+# suggestions_pb2_grpc.SuggestionsServiceServicer
+class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer):
+    # Create an RPC function
+    def Suggest(self, request, context):
+        suggested_books = [
+            suggestions.Book(bookId="998", title="The Third Best Book", author="Author 3"),
+            suggestions.Book(bookId="999", title="The Fourth Best Book", author="Author 4")
+        ]
         # Return the response object
-        return response
+        return suggestions.SuggestionsResponse(suggestedBooks=suggested_books)
 
 def serve():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
-    # Add HelloService
-    suggestions_grpc.add_HelloServiceServicer_to_server(HelloService(), server)
+    # Add SuggestionsService
+    suggestions_grpc.add_SuggestionsServiceServicer_to_server(SuggestionsService(), server)
     # Listen on port 50053
     port = "50053"
     server.add_insecure_port("[::]:" + port)
