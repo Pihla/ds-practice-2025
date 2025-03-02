@@ -5,7 +5,7 @@ import grpc
 import transaction_verification_pb2 as transaction__verification__pb2
 
 
-class HelloServiceStub(object):
+class TransactionVerificationServiceStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -14,42 +14,42 @@ class HelloServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SayHello = channel.unary_unary(
-                '/hello.HelloService/SayHello',
-                request_serializer=transaction__verification__pb2.HelloRequest.SerializeToString,
-                response_deserializer=transaction__verification__pb2.HelloResponse.FromString,
+        self.VerifyTransaction = channel.unary_unary(
+                '/transaction_verification.TransactionVerificationService/VerifyTransaction',
+                request_serializer=transaction__verification__pb2.TransactionVerificationRequest.SerializeToString,
+                response_deserializer=transaction__verification__pb2.TransactionVerificationResponse.FromString,
                 )
 
 
-class HelloServiceServicer(object):
+class TransactionVerificationServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def SayHello(self, request, context):
+    def VerifyTransaction(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_HelloServiceServicer_to_server(servicer, server):
+def add_TransactionVerificationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'SayHello': grpc.unary_unary_rpc_method_handler(
-                    servicer.SayHello,
-                    request_deserializer=transaction__verification__pb2.HelloRequest.FromString,
-                    response_serializer=transaction__verification__pb2.HelloResponse.SerializeToString,
+            'VerifyTransaction': grpc.unary_unary_rpc_method_handler(
+                    servicer.VerifyTransaction,
+                    request_deserializer=transaction__verification__pb2.TransactionVerificationRequest.FromString,
+                    response_serializer=transaction__verification__pb2.TransactionVerificationResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'hello.HelloService', rpc_method_handlers)
+            'transaction_verification.TransactionVerificationService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
  # This class is part of an EXPERIMENTAL API.
-class HelloService(object):
+class TransactionVerificationService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def SayHello(request,
+    def VerifyTransaction(request,
             target,
             options=(),
             channel_credentials=None,
@@ -59,8 +59,8 @@ class HelloService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/hello.HelloService/SayHello',
-            transaction__verification__pb2.HelloRequest.SerializeToString,
-            transaction__verification__pb2.HelloResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/transaction_verification.TransactionVerificationService/VerifyTransaction',
+            transaction__verification__pb2.TransactionVerificationRequest.SerializeToString,
+            transaction__verification__pb2.TransactionVerificationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

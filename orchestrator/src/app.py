@@ -17,6 +17,7 @@ suggestions_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/su
 sys.path.insert(0, suggestions_grpc_path)
 import suggestions_pb2 as suggestions
 import suggestions_pb2_grpc as suggestions_grpc
+
 # Set up transaction verification
 transaction_verification_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/transaction_verification'))
 sys.path.insert(0, transaction_verification_grpc_path)
@@ -47,6 +48,28 @@ def suggest_books(data):
         bookId = "100" # dummy bookId
         # Call the service through the stub object.
         response = stub.Suggest(suggestions.SuggestionsRequest(bookId=bookId))
+        print(response)
+    return response
+
+def verify_transaction(data):
+    with grpc.insecure_channel('transaction_verification:50052') as channel:
+        # Create a stub object.
+        stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
+        transaction_request_data = transaction_verification.Transaction(
+            user=
+                transaction_verification.User(
+                    name=data["user"]["name"],
+                    contact=data["user"]["contact"]
+                ),
+            creditCard=
+                transaction_verification.CreditCard(
+                    number=data["creditCard"]["number"],
+                    expirationDate=data["creditCard"]["expirationDate"],
+                    cvv=data["creditCard"]["cvv"]
+                ),
+            termsAccepted=data["termsAccepted"]
+        )
+        response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(transaction=transaction_request_data))
         print(response)
     return response
 
@@ -87,7 +110,9 @@ def checkout():
     print("LOG: Fraud detection in progress")
     fraud_detection_response = detect_fraud(request_data)
     print("LOG: Fraud detection finished")
-
+    print("LOG: Transaction verification in progress")
+    transaction_verification_response = verify_transaction(request_data)
+    print("LOG: Transaction verification finished")
     # Dummy response
     order_status_response = {
         'orderId': '12345',
@@ -98,7 +123,7 @@ def checkout():
         ]
     }
 
-    if fraud_detection_response.is_valid:
+    if fraud_detection_response.is_valid and transaction_verification_response.is_valid:
         order_status_response["status"] = "Order Approved"
         print("LOG: Getting suggestions.")
         suggestions_response = suggest_books(request_data)
@@ -107,7 +132,7 @@ def checkout():
             for book in suggestions_response.suggestedBooks
         ]
     else:
-        order_status_response["status"] = f"Order not approved. \n{fraud_detection_response.message}"
+        order_status_response["status"] = f"Order not approved. \n{fraud_detection_response.message}\n{transaction_verification_response.message}"
 
     return order_status_response
 

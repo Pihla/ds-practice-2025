@@ -1,15 +1,33 @@
 syntax = "proto3";
 
-package hello;
+package transaction_verification;
 
-service HelloService {
-    rpc SayHello (HelloRequest) returns (HelloResponse);
+service TransactionVerificationService {
+    rpc VerifyTransaction (TransactionVerificationRequest) returns (TransactionVerificationResponse);
 }
 
-message HelloRequest {
+message User {
     string name = 1;
+    string contact = 2;
 }
 
-message HelloResponse {
-    string greeting = 1;
+message CreditCard {
+    string number = 1;
+    string expirationDate = 2;
+    string cvv = 3;
+}
+
+message Transaction {
+    User user = 1;
+    CreditCard creditCard = 2;
+    bool termsAccepted =  3;
+}
+
+message TransactionVerificationRequest {
+    Transaction transaction = 1;
+}
+
+message TransactionVerificationResponse {
+    bool is_valid = 1;
+    string message = 2;
 }
