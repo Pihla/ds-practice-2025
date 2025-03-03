@@ -1,5 +1,6 @@
 import sys
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -28,6 +29,7 @@ import transaction_verification_pb2_grpc as transaction_verification_grpc
 import grpc
 
 def detect_fraud(data):
+    print("LOG: Fraud detection in progress")
     # Establish a connection with the fraud-detection gRPC service.
     with grpc.insecure_channel('fraud_detection:50051') as channel:
         # Create a stub object.
@@ -39,9 +41,11 @@ def detect_fraud(data):
         # Call the service through the stub object.
         response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(amount=amount))
         print(response)
+    print("LOG: Fraud detection finished")
     return response
 
 def suggest_books(data):
+    print("LOG: Getting suggestions.")
     with grpc.insecure_channel('suggestions:50053') as channel:
         # Create a stub object.
         stub = suggestions_grpc.SuggestionsServiceStub(channel)
@@ -52,6 +56,7 @@ def suggest_books(data):
     return response
 
 def verify_transaction(data):
+    print("LOG: Transaction verification in progress")
     with grpc.insecure_channel('transaction_verification:50052') as channel:
         # Create a stub object.
         stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
@@ -71,6 +76,7 @@ def verify_transaction(data):
         )
         response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(transaction=transaction_request_data))
         print(response)
+    print("LOG: Transaction verification finished")
     return response
 
 # Import Flask.
@@ -105,14 +111,15 @@ def checkout():
     # Get request object data to json
     print("LOG: Received POST REQUEST /checkout")
     request_data = json.loads(request.data)
+
     # Print request object data
     print("LOG: POST REQUEST Data:", request_data)
-    print("LOG: Fraud detection in progress")
-    fraud_detection_response = detect_fraud(request_data)
-    print("LOG: Fraud detection finished")
-    print("LOG: Transaction verification in progress")
-    transaction_verification_response = verify_transaction(request_data)
-    print("LOG: Transaction verification finished")
+
+    # Use threads for fraud detection, transaction verification and book suggestions
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [executor.submit(f, request_data) for f in [detect_fraud, verify_transaction, suggest_books]]
+        fraud_detection_response, transaction_verification_response, suggestions_response = [future.result() for future in futures]
+
     # Dummy response
     order_status_response = {
         'orderId': '12345',
@@ -125,8 +132,6 @@ def checkout():
 
     if fraud_detection_response.is_valid and transaction_verification_response.is_valid:
         order_status_response["status"] = "Order Approved"
-        print("LOG: Getting suggestions.")
-        suggestions_response = suggest_books(request_data)
         order_status_response["suggestedBooks"] = [
             {"bookId": book.bookId, "title": book.title, "author": book.author}
             for book in suggestions_response.suggestedBooks
