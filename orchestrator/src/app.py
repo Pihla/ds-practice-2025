@@ -29,7 +29,7 @@ import transaction_verification_pb2_grpc as transaction_verification_grpc
 import grpc
 
 def detect_fraud(data):
-    print("LOG: Fraud detection in progress")
+    print("Fraud detection in progress")
 
     # Establish a connection with the fraud-detection gRPC service
     with grpc.insecure_channel('fraud_detection:50051') as channel:
@@ -44,11 +44,11 @@ def detect_fraud(data):
         # Call the service through the stub object
         response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(amount=amount, full_request_data=str(data)))
         print(response)
-    print("LOG: Fraud detection finished")
+    print("Fraud detection finished")
     return response
 
 def suggest_books(data):
-    print("LOG: Getting suggestions.")
+    print("Getting suggestions")
     with grpc.insecure_channel('suggestions:50053') as channel:
         # Create a stub object
         stub = suggestions_grpc.SuggestionsServiceStub(channel)
@@ -64,7 +64,7 @@ def suggest_books(data):
     return response
 
 def verify_transaction(data):
-    print("LOG: Transaction verification in progress")
+    print("Transaction verification in progress")
     with grpc.insecure_channel('transaction_verification:50052') as channel:
         # Create a stub object
         stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
@@ -88,7 +88,7 @@ def verify_transaction(data):
         # Call the service through the stub object
         response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(transaction=transaction_request_data))
         print(response)
-    print("LOG: Transaction verification finished")
+    print("Transaction verification finished")
     return response
 
 # Import Flask.
@@ -110,7 +110,7 @@ def index():
     """
     Responds with 'Hello!' when a GET request is made to '/' endpoint.
     """
-    print("LOG: Received GET REQUEST")
+    print("Received GET REQUEST")
     response = "Hello!"
     # Return the response
     return response
@@ -121,11 +121,11 @@ def checkout():
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
     # Get request object data to json
-    print("LOG: Received POST REQUEST /checkout")
+    print("Received POST REQUEST /checkout")
     request_data = json.loads(request.data)
 
     # Print request object data
-    print("LOG: POST REQUEST Data:", request_data)
+    print("POST REQUEST Data:", request_data)
 
     # Use threads for fraud detection, transaction verification and book suggestions
     with ThreadPoolExecutor(max_workers=3) as executor:

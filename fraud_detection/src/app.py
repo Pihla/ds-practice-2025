@@ -53,7 +53,7 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
         # Use simple fraud detection as fallback
         except Exception as e:
             print(f"Using fraud detection AI API failed. Cause: {e}")
-            print("Using simple fraud detection as fallback.")
+            print("Using simple fraud detection as fallback")
 
             # Set the fields of the response object
             if 0 < request.amount < 50:
