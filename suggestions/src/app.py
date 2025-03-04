@@ -17,13 +17,17 @@ from concurrent import futures
 # Create a class to define the server functions, derived from
 # suggestions_pb2_grpc.SuggestionsServiceServicer
 class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer):
+
     # Create an RPC function
     def Suggest(self, request, context):
-        try: # try using online AI
+        # Try using online AI
+        try:
             # Get API key from environment variables
             key = os.environ.get("GENAI_API_KEY")
+
             # Construct message to AI API
             message_to_ai = "Give me 1 to 3 book suggestions that are different from those books. ONLY reply with the book name and author name separated by a comma. Separate each book with semicolon. INFO: " + str(request)
+
             # Send message to AI API
             print(f"Sending message to suggestions AI API")
             client = genai.Client(api_key=key)
@@ -38,7 +42,9 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer):
             ai_api_response = [ai_api_response[i].split(",") for i in range(len(ai_api_response))]
             suggested_books = [suggestions.Book(bookId="000", title=book[0].strip(), author=book[1].strip()) for book in ai_api_response]
             return suggestions.SuggestionsResponse(suggestedBooks=suggested_books)
-        except Exception as e: # use dummy suggestion as fallback
+
+        # Use dummy suggestion as fallback
+        except Exception as e:
             print(f"Using suggestions AI API failed. Cause: {e}")
             print("Using dummy suggestions as fallback.")
             suggested_books = [
@@ -46,20 +52,25 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer):
                 suggestions.Book(bookId="000", title="Kevade", author="Oskar Luts")
             ]
             response = suggestions.SuggestionsResponse(suggestedBooks=suggested_books)
+
         # Return the response object
         return response
 
 def serve():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
+
     # Add SuggestionsService
     suggestions_grpc.add_SuggestionsServiceServicer_to_server(SuggestionsService(), server)
+
     # Listen on port 50053
     port = "50053"
     server.add_insecure_port("[::]:" + port)
+
     # Start the server
     server.start()
     print("Server started. Listening on port 50053.")
+
     # Keep thread alive
     server.wait_for_termination()
 

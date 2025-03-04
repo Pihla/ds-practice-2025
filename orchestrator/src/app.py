@@ -30,14 +30,17 @@ import grpc
 
 def detect_fraud(data):
     print("LOG: Fraud detection in progress")
+
     # Establish a connection with the fraud-detection gRPC service.
     with grpc.insecure_channel('fraud_detection:50051') as channel:
         # Create a stub object.
         stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
 
+        # Calculate total amount of items.
         amount = 0
         for item in data["items"]:
             amount += item["quantity"]
+
         # Call the service through the stub object.
         response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(amount=amount, full_request_data=str(data)))
         print(response)
@@ -49,9 +52,12 @@ def suggest_books(data):
     with grpc.insecure_channel('suggestions:50053') as channel:
         # Create a stub object.
         stub = suggestions_grpc.SuggestionsServiceStub(channel)
+
+        # Create list of ordered books.
         ordered_books = []
         for item in data["items"]:
             ordered_books.append(suggestions.Book(bookId="000", title=item["name"], author=item["author"]))
+
         # Call the service through the stub object.
         response = stub.Suggest(suggestions.SuggestionsRequest(orderedBooks=ordered_books))
         print(response)
@@ -62,6 +68,8 @@ def verify_transaction(data):
     with grpc.insecure_channel('transaction_verification:50052') as channel:
         # Create a stub object.
         stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
+
+        # Create transaction object.
         transaction_request_data = transaction_verification.Transaction(
             user=
                 transaction_verification.User(
@@ -76,6 +84,8 @@ def verify_transaction(data):
                 ),
             termsAccepted=data["termsAccepted"]
         )
+
+        # Call the service through the stub object.
         response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(transaction=transaction_request_data))
         print(response)
     print("LOG: Transaction verification finished")
@@ -110,37 +120,36 @@ def checkout():
     """
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
-    # Get request object data to json
+    # Get request object data to json.
     print("LOG: Received POST REQUEST /checkout")
     request_data = json.loads(request.data)
 
-    # Print request object data
+    # Print request object data.
     print("LOG: POST REQUEST Data:", request_data)
 
-    # Use threads for fraud detection, transaction verification and book suggestions
+    # Use threads for fraud detection, transaction verification and book suggestions.
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = [executor.submit(f, request_data) for f in [detect_fraud, verify_transaction, suggest_books]]
         fraud_detection_response, transaction_verification_response, suggestions_response = [future.result() for future in futures]
 
-    # Dummy response
-    order_status_response = {
-        'orderId': '12345',
-        'status': 'Order Approved',
-        'suggestedBooks': [
-            {'bookId': '123', 'title': 'The Best Book', 'author': 'Author 1'},
-            {'bookId': '456', 'title': 'The Second Best Book', 'author': 'Author 2'}
-        ]
-    }
+    # Define order id.
+    order_id = "12345" # Dummy id
 
     if fraud_detection_response.is_valid and transaction_verification_response.is_valid:
-        order_status_response["status"] = "Order Approved"
-        order_status_response["suggestedBooks"] = [
+        order_status_response = {
+            'orderId': order_id,
+            'status': "Order Approved",
+            'suggestedBooks': [
             {"bookId": book.bookId, "title": book.title, "author": book.author}
             for book in suggestions_response.suggestedBooks
-        ]
+            ]
+        }
     else:
-        order_status_response["status"] = f"Order not approved. \n{fraud_detection_response.message}\n{transaction_verification_response.message}"
-
+        order_status_response = {
+            'orderId': order_id,
+            'status': f"Order not approved. \n{fraud_detection_response.message}\n{transaction_verification_response.message}",
+            'suggestedBooks': []
+        }
     return order_status_response
 
 

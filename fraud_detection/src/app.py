@@ -17,14 +17,17 @@ from concurrent import futures
 # Create a class to define the server functions, derived from
 # fraud_detection_pb2_grpc.FraudDetectionServiceServicer
 class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
+
     # Create an RPC function to detect fraud
     def FraudDetection(self, request, context):
         # Create a FraudDetectionResponse object
         response = fraud_detection.FraudDetectionResponse()
 
-        try: # try using online AI
+        # Try using online AI
+        try:
             # Get API key from environment variables
             key = os.environ.get("GENAI_API_KEY")
+
             # Construct message to AI API
             message_to_ai = "Analyze the book order and give me boolean True or False whether it seems valid (not fraudulent). Then put semicolon and small explanation to customer. Order: " + str(request)
 
@@ -47,9 +50,11 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
                 raise ValueError(f"Expected boolean value, got {ai_api_response}")
             response.message = ai_api_response[1].strip()
 
-        except Exception as e: # use simple fraud detection as fallback
+        # Use simple fraud detection as fallback
+        except Exception as e:
             print(f"Using fraud detection AI API failed. Cause: {e}")
             print("Using simple fraud detection as fallback.")
+
             # Set the fields of the response object
             if 0 < request.amount < 50:
                 response.is_valid = True
@@ -57,22 +62,28 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
             else:
                 response.is_valid = False
                 response.message = f"Order is fraudulent. Too many items ({request.amount})."
-            # Print the message
-            print(response.message)
-            # Return the response object
+
+        # Print the message
+        print(response.message)
+
+        # Return the response object
         return response
 
 def serve():
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
+
     # Add FraudDetectionService
     fraud_detection_grpc.add_FraudDetectionServiceServicer_to_server(FraudDetectionService(), server)
+
     # Listen on port 50051
     port = "50051"
     server.add_insecure_port("[::]:" + port)
+
     # Start the server
     server.start()
     print("Server started. Listening on port 50051.")
+
     # Keep thread alive
     server.wait_for_termination()
 
