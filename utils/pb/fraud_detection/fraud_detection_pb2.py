@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x66raud_detection.proto\x12\x0f\x66raud_detection\"\'\n\x15\x46raudDetectionRequest\x12\x0e\n\x06\x61mount\x18\x01 \x01(\x05\";\n\x16\x46raudDetectionResponse\x12\x10\n\x08is_valid\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t2z\n\x15\x46raudDetectionService\x12\x61\n\x0e\x46raudDetection\x12&.fraud_detection.FraudDetectionRequest\x1a\'.fraud_detection.FraudDetectionResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x66raud_detection.proto\x12\x0f\x66raud_detection\"B\n\x15\x46raudDetectionRequest\x12\x0e\n\x06\x61mount\x18\x01 \x01(\x05\x12\x19\n\x11\x66ull_request_data\x18\x02 \x01(\t\";\n\x16\x46raudDetectionResponse\x12\x10\n\x08is_valid\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t2z\n\x15\x46raudDetectionService\x12\x61\n\x0e\x46raudDetection\x12&.fraud_detection.FraudDetectionRequest\x1a\'.fraud_detection.FraudDetectionResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,9 +22,9 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'fraud_detection_pb2', _glob
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _globals['_FRAUDDETECTIONREQUEST']._serialized_start=42
-  _globals['_FRAUDDETECTIONREQUEST']._serialized_end=81
-  _globals['_FRAUDDETECTIONRESPONSE']._serialized_start=83
-  _globals['_FRAUDDETECTIONRESPONSE']._serialized_end=142
-  _globals['_FRAUDDETECTIONSERVICE']._serialized_start=144
-  _globals['_FRAUDDETECTIONSERVICE']._serialized_end=266
+  _globals['_FRAUDDETECTIONREQUEST']._serialized_end=108
+  _globals['_FRAUDDETECTIONRESPONSE']._serialized_start=110
+  _globals['_FRAUDDETECTIONRESPONSE']._serialized_end=169
+  _globals['_FRAUDDETECTIONSERVICE']._serialized_start=171
+  _globals['_FRAUDDETECTIONSERVICE']._serialized_end=293
 # @@protoc_insertion_point(module_scope)

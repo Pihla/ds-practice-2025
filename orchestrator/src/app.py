@@ -39,7 +39,7 @@ def detect_fraud(data):
         for item in data["items"]:
             amount += item["quantity"]
         # Call the service through the stub object.
-        response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(amount=amount))
+        response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(amount=amount, full_request_data=str(data)))
         print(response)
     print("LOG: Fraud detection finished")
     return response

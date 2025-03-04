@@ -8,6 +8,7 @@ service FraudDetectionService {
 
 message FraudDetectionRequest {
     int32 amount = 1;
+    string full_request_data = 2;
 }
 
 message FraudDetectionResponse {

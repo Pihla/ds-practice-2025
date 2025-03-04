@@ -5,10 +5,12 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class FraudDetectionRequest(_message.Message):
-    __slots__ = ("amount",)
+    __slots__ = ("amount", "full_request_data")
     AMOUNT_FIELD_NUMBER: _ClassVar[int]
+    FULL_REQUEST_DATA_FIELD_NUMBER: _ClassVar[int]
     amount: int
-    def __init__(self, amount: _Optional[int] = ...) -> None: ...
+    full_request_data: str
+    def __init__(self, amount: _Optional[int] = ..., full_request_data: _Optional[str] = ...) -> None: ...
 
 class FraudDetectionResponse(_message.Message):
     __slots__ = ("is_valid", "message")
