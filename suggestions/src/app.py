@@ -1,5 +1,6 @@
 import sys
 import os
+from google import genai
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -18,12 +19,35 @@ from concurrent import futures
 class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer):
     # Create an RPC function
     def Suggest(self, request, context):
-        suggested_books = [
-            suggestions.Book(bookId="998", title="The Third Best Book", author="Author 3"),
-            suggestions.Book(bookId="999", title="The Fourth Best Book", author="Author 4")
-        ]
+        try: # try using online AI
+            # Get API key from environment variables
+            key = os.environ.get("GENAI_API_KEY")
+            # Construct message to AI API
+            message_to_ai = "Give me one book suggestion that is different from those books. ONLY reply with the book name and author name separated by a semicolon. INFO: " + str(request)
+
+            # Send message to AI API
+            print(f"Sending message to suggestions AI API")
+            client = genai.Client(api_key=key)
+            ai_api_response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=message_to_ai
+            ).text
+            print(f"Suggestions AI API responded: {ai_api_response}")
+
+            # Convert API response to correct format
+            ai_api_response = ai_api_response.split(";")
+            suggested_books = [suggestions.Book(bookId="000", title=ai_api_response[0].strip(), author=ai_api_response[1].strip())]
+            return suggestions.SuggestionsResponse(suggestedBooks=suggested_books)
+        except Exception as e: # use dummy suggestion as fallback
+            print(f"Using suggestions AI API failed. Cause: {e}")
+            print("Using dummy suggestions as fallback.")
+            suggested_books = [
+                suggestions.Book(bookId="998", title="The Third Best Book", author="Author 3"),
+                suggestions.Book(bookId="999", title="The Fourth Best Book", author="Author 4")
+            ]
+            response = suggestions.SuggestionsResponse(suggestedBooks=suggested_books)
         # Return the response object
-        return suggestions.SuggestionsResponse(suggestedBooks=suggested_books)
+        return response
 
 def serve():
     # Create a gRPC server

@@ -16,10 +16,10 @@ class Book(_message.Message):
     def __init__(self, bookId: _Optional[str] = ..., title: _Optional[str] = ..., author: _Optional[str] = ...) -> None: ...
 
 class SuggestionsRequest(_message.Message):
-    __slots__ = ("bookId",)
-    BOOKID_FIELD_NUMBER: _ClassVar[int]
-    bookId: str
-    def __init__(self, bookId: _Optional[str] = ...) -> None: ...
+    __slots__ = ("orderedBooks",)
+    ORDEREDBOOKS_FIELD_NUMBER: _ClassVar[int]
+    orderedBooks: _containers.RepeatedCompositeFieldContainer[Book]
+    def __init__(self, orderedBooks: _Optional[_Iterable[_Union[Book, _Mapping]]] = ...) -> None: ...
 
 class SuggestionsResponse(_message.Message):
     __slots__ = ("suggestedBooks",)

@@ -49,9 +49,11 @@ def suggest_books(data):
     with grpc.insecure_channel('suggestions:50053') as channel:
         # Create a stub object.
         stub = suggestions_grpc.SuggestionsServiceStub(channel)
-        bookId = "100" # dummy bookId
+        ordered_books = []
+        for item in data["items"]:
+            ordered_books.append(suggestions.Book(bookId="000", title=item["name"], author=item["author"]))
         # Call the service through the stub object.
-        response = stub.Suggest(suggestions.SuggestionsRequest(bookId=bookId))
+        response = stub.Suggest(suggestions.SuggestionsRequest(orderedBooks=ordered_books))
         print(response)
     return response
 

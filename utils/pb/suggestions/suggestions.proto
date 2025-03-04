@@ -13,7 +13,7 @@ message Book {
 }
 
 message SuggestionsRequest {
-    string bookId = 1;
+    repeated Book orderedBooks = 1;
 }
 
 message SuggestionsResponse {

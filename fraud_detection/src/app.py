@@ -25,12 +25,11 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
         try: # try using online AI
             # Get API key from environment variables
             key = os.environ.get("GENAI_API_KEY")
-
             # Construct message to AI API
             message_to_ai = "Analyze the book order and give me boolean True or False whether it seems valid (not fraudulent). Then put semicolon and small explanation to customer. Order: " + str(request)
 
             # Send message to AI API
-            print(f"Sending message to AI API: {message_to_ai}")
+            print(f"Sending message to AI API")
             client = genai.Client(api_key=key)
             ai_api_response = client.models.generate_content(
                 model="gemini-2.0-flash",
@@ -49,7 +48,7 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
             response.message = ai_api_response[1].strip()
 
         except Exception as e: # use simple fraud detection as fallback
-            print(f"Using AI API failed. Cause: {e}")
+            print(f"Using fraud detection AI API failed. Cause: {e}")
             print("Using simple fraud detection as fallback.")
             # Set the fields of the response object
             if 0 < request.amount < 50:
