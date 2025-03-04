@@ -32,13 +32,13 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
             message_to_ai = "Analyze the book order and give me boolean True or False whether it seems valid (not fraudulent). Then put semicolon and small explanation to customer. Order: " + str(request)
 
             # Send message to AI API
-            print(f"Sending message to AI API")
+            print(f"Sending message to AI API for fraud detection")
             client = genai.Client(api_key=key)
             ai_api_response = client.models.generate_content(
                 model="gemini-2.0-flash",
                 contents=message_to_ai
             ).text
-            print(f"AI API responded: {ai_api_response}")
+            print(f"AI API responded to fraud detection: {ai_api_response}")
 
             # Convert API response to correct format
             ai_api_response = ai_api_response.split(";")
