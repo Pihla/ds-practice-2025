@@ -23,8 +23,7 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer):
             # Get API key from environment variables
             key = os.environ.get("GENAI_API_KEY")
             # Construct message to AI API
-            message_to_ai = "Give me one book suggestion that is different from those books. ONLY reply with the book name and author name separated by a semicolon. INFO: " + str(request)
-
+            message_to_ai = "Give me 1 to 3 book suggestions that are different from those books. ONLY reply with the book name and author name separated by a comma. Separate each book with semicolon. INFO: " + str(request)
             # Send message to AI API
             print(f"Sending message to suggestions AI API")
             client = genai.Client(api_key=key)
@@ -36,14 +35,15 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer):
 
             # Convert API response to correct format
             ai_api_response = ai_api_response.split(";")
-            suggested_books = [suggestions.Book(bookId="000", title=ai_api_response[0].strip(), author=ai_api_response[1].strip())]
+            ai_api_response = [ai_api_response[i].split(",") for i in range(len(ai_api_response))]
+            suggested_books = [suggestions.Book(bookId="000", title=book[0].strip(), author=book[1].strip()) for book in ai_api_response]
             return suggestions.SuggestionsResponse(suggestedBooks=suggested_books)
         except Exception as e: # use dummy suggestion as fallback
             print(f"Using suggestions AI API failed. Cause: {e}")
             print("Using dummy suggestions as fallback.")
             suggested_books = [
-                suggestions.Book(bookId="998", title="The Third Best Book", author="Author 3"),
-                suggestions.Book(bookId="999", title="The Fourth Best Book", author="Author 4")
+                suggestions.Book(bookId="000", title="Rehepapp", author="Andrus Kivirähk"),
+                suggestions.Book(bookId="000", title="Kevade", author="Oskar Luts")
             ]
             response = suggestions.SuggestionsResponse(suggestedBooks=suggested_books)
         # Return the response object
