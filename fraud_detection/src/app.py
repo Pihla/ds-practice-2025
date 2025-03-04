@@ -1,5 +1,6 @@
 import sys
 import os
+from google import genai
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -20,16 +21,46 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
     def FraudDetection(self, request, context):
         # Create a FraudDetectionResponse object
         response = fraud_detection.FraudDetectionResponse()
-        # Set the fields of the response object
-        if 0 < request.amount < 50:
-            response.is_valid = True
-            response.message = f"Order is not fraudulent. (nr of items: {request.amount})"
-        else:
-            response.is_valid = False
-            response.message = f"Order is fraudulent. Too many items ({request.amount})."
-        # Print the message
-        print(response.message)
-        # Return the response object
+
+        try: # try using online AI
+            # Get API key from environment variables
+            key = os.environ.get("GENAI_API_KEY")
+
+            # Construct message to AI API
+            message_to_ai = "Analyze the book order and give me boolean True or False whether it seems valid (not fraudulent). Then put semicolon and small explanation to customer. Order: " + str(request)
+
+            # Send message to AI API
+            print(f"Sending message to AI API: {message_to_ai}")
+            client = genai.Client(api_key=key)
+            ai_api_response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=message_to_ai
+            ).text
+            print(f"AI API responded: {ai_api_response}")
+
+            # Convert API response to correct format
+            ai_api_response = ai_api_response.split(";")
+            if ai_api_response[0] == "True":
+                response.is_valid = True
+            elif ai_api_response[0] == "False":
+                response.is_valid = False
+            else:
+                raise ValueError(f"Expected boolean value, got {ai_api_response}")
+            response.message = ai_api_response[1].strip()
+
+        except Exception as e: # use simple fraud detection as fallback
+            print(f"Using AI API failed. Cause: {e}")
+            print("Using simple fraud detection as fallback.")
+            # Set the fields of the response object
+            if 0 < request.amount < 50:
+                response.is_valid = True
+                response.message = f"Order is not fraudulent. (nr of items: {request.amount})"
+            else:
+                response.is_valid = False
+                response.message = f"Order is fraudulent. Too many items ({request.amount})."
+            # Print the message
+            print(response.message)
+            # Return the response object
         return response
 
 def serve():
