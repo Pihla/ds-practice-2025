@@ -1,6 +1,7 @@
 import sys
 import os
 from concurrent.futures import ThreadPoolExecutor
+import uuid
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -133,7 +134,7 @@ def checkout():
         fraud_detection_response, transaction_verification_response, suggestions_response = [future.result() for future in futures]
 
     # Define order id
-    order_id = "12345" # Dummy id
+    order_id = str(uuid.uuid4())
 
     if fraud_detection_response.is_valid and transaction_verification_response.is_valid:
         order_status_response = {
