@@ -1,6 +1,7 @@
 import sys
 import os
 from google import genai
+from utils.base_service.BaseService import BaseService
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -16,7 +17,9 @@ from concurrent import futures
 
 # Create a class to define the server functions, derived from
 # suggestions_pb2_grpc.SuggestionsServiceServicer
-class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer):
+class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer, BaseService):
+    def __init__(self):
+        super().__init__(service_name="SuggestionsService")
 
     # Create an RPC function
     def Suggest(self, request, context):

@@ -1,6 +1,7 @@
 import sys
 import os
 from datetime import datetime
+from utils.base_service.BaseService import BaseService
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -16,7 +17,9 @@ from concurrent import futures
 
 # Create a class to define the server functions, derived from
 # transaction_verification_pb2_grpc.HelloServiceServicer
-class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationServiceServicer):
+class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationServiceServicer, BaseService):
+    def __init__(self):
+        super().__init__(service_name="TransactionVerificationService")
 
     # Create an RPC function to say hello
     def VerifyTransaction(self, request, context):

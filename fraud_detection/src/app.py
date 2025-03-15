@@ -1,6 +1,7 @@
 import sys
 import os
 from google import genai
+from utils.base_service.BaseService import BaseService
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -16,7 +17,9 @@ from concurrent import futures
 
 # Create a class to define the server functions, derived from
 # fraud_detection_pb2_grpc.FraudDetectionServiceServicer
-class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer):
+class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, BaseService):
+    def __init__(self):
+        super().__init__(service_name="FraudFetectionService")
 
     # Create an RPC function to detect fraud
     def FraudDetection(self, request, context):
