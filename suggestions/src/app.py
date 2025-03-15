@@ -19,7 +19,7 @@ from concurrent import futures
 # suggestions_pb2_grpc.SuggestionsServiceServicer
 class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer, BaseService):
     def __init__(self):
-        super().__init__(service_name="SuggestionsService")
+        super().__init__("SuggestionsService", 1)
 
     # Create an RPC function
     def Suggest(self, request, context):

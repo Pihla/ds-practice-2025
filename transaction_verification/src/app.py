@@ -19,7 +19,7 @@ from concurrent import futures
 # transaction_verification_pb2_grpc.HelloServiceServicer
 class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationServiceServicer, BaseService):
     def __init__(self):
-        super().__init__(service_name="TransactionVerificationService")
+        super().__init__("TransactionVerificationService", 2)
 
     # Create an RPC function to say hello
     def VerifyTransaction(self, request, context):

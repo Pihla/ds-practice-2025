@@ -19,7 +19,7 @@ from concurrent import futures
 # fraud_detection_pb2_grpc.FraudDetectionServiceServicer
 class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, BaseService):
     def __init__(self):
-        super().__init__(service_name="FraudFetectionService")
+        super().__init__("FraudFetectionService", 0)
 
     # Create an RPC function to detect fraud
     def FraudDetection(self, request, context):
