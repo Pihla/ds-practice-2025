@@ -15,11 +15,3 @@ class BaseService:
         for i in range(self.total_svcs):
             local_vc[i] = max(local_vc[i], incoming_vc[i])
         local_vc[self.svc_indx] += 1
-
-    def verify_items(self, order_id, incoming_vc):
-        entry = self.orders[order_id]["data"]
-        self.merge_and_increment(entry, incoming_vc)
-        # dummy check
-        if not entry["data"].items:
-            return {"fail": True, "vc": entry["vc"]}
-        return {"fail": False, "vc": entry["vc"]}
