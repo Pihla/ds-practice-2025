@@ -133,6 +133,21 @@ def checkout():
         futures = [executor.submit(f, request_data) for f in [detect_fraud, verify_transaction, suggest_books]]
         fraud_detection_response, transaction_verification_response, suggestions_response = [future.result() for future in futures]
 
+
+    #TODO iga meetodi thread ja event ordering.
+    # a - terms accepted (TV)
+    # b - user info ok (TV)
+    # c - credit card info ok (TV)
+    # d - fraud detect user (FD)
+    # e - fraud detect credit card (FD)
+    # f - suggestions (S)
+
+    # a võib samal ajal kui b
+    # c peale a-d (aga võib samal ajal kui b)
+    # d peale b-d, aga võib samal ajal kui c
+    # e peale c ja d
+    # f peale e
+
     # Define order id
     order_id = str(uuid.uuid4())
 
