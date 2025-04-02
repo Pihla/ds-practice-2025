@@ -85,9 +85,9 @@ def verify_transaction(data):
                 ),
             termsAccepted=data["termsAccepted"]
         )
-
+        stub.InitTransactionVerification(transaction_verification.TransactionVerificationData(orderId="aaa", data=transaction_request_data))
         # Call the service through the stub object
-        response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(transaction=transaction_request_data))
+        response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(orderId="aaa", vector_clock=[0,0,0]))
         print(response)
     print("Transaction verification finished")
     return response

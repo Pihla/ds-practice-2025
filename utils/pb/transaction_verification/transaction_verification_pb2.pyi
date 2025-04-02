@@ -1,6 +1,8 @@
+from google.protobuf import empty_pb2 as _empty_pb2
+from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -32,16 +34,28 @@ class Transaction(_message.Message):
     termsAccepted: bool
     def __init__(self, user: _Optional[_Union[User, _Mapping]] = ..., creditCard: _Optional[_Union[CreditCard, _Mapping]] = ..., termsAccepted: bool = ...) -> None: ...
 
+class TransactionVerificationData(_message.Message):
+    __slots__ = ("orderId", "data")
+    ORDERID_FIELD_NUMBER: _ClassVar[int]
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    orderId: str
+    data: Transaction
+    def __init__(self, orderId: _Optional[str] = ..., data: _Optional[_Union[Transaction, _Mapping]] = ...) -> None: ...
+
 class TransactionVerificationRequest(_message.Message):
-    __slots__ = ("transaction",)
-    TRANSACTION_FIELD_NUMBER: _ClassVar[int]
-    transaction: Transaction
-    def __init__(self, transaction: _Optional[_Union[Transaction, _Mapping]] = ...) -> None: ...
+    __slots__ = ("orderId", "vector_clock")
+    ORDERID_FIELD_NUMBER: _ClassVar[int]
+    VECTOR_CLOCK_FIELD_NUMBER: _ClassVar[int]
+    orderId: str
+    vector_clock: _containers.RepeatedScalarFieldContainer[int]
+    def __init__(self, orderId: _Optional[str] = ..., vector_clock: _Optional[_Iterable[int]] = ...) -> None: ...
 
 class TransactionVerificationResponse(_message.Message):
-    __slots__ = ("is_valid", "message")
+    __slots__ = ("is_valid", "vector_clock", "message")
     IS_VALID_FIELD_NUMBER: _ClassVar[int]
+    VECTOR_CLOCK_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     is_valid: bool
+    vector_clock: _containers.RepeatedScalarFieldContainer[int]
     message: str
-    def __init__(self, is_valid: bool = ..., message: _Optional[str] = ...) -> None: ...
+    def __init__(self, is_valid: bool = ..., vector_clock: _Optional[_Iterable[int]] = ..., message: _Optional[str] = ...) -> None: ...

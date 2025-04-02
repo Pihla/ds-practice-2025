@@ -11,6 +11,7 @@ transaction_verification_grpc_path = os.path.abspath(os.path.join(FILE, '../../.
 sys.path.insert(0, transaction_verification_grpc_path)
 import transaction_verification_pb2 as transaction_verification
 import transaction_verification_pb2_grpc as transaction_verification_grpc
+from google.protobuf.empty_pb2 import Empty
 
 import grpc
 from concurrent import futures
@@ -21,35 +22,39 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     def __init__(self):
         super().__init__("TransactionVerificationService", 2)
 
-    # Create an RPC function to say hello
+    def InitTransactionVerification(self, request, context):
+        self.init_order(request.orderId, request.data)
+        return Empty()
+
     def VerifyTransaction(self, request, context):
+        order_data = self.orders[request.orderId]["data"]
         # Check whether terms are accepted
-        if not request.transaction.termsAccepted:
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, message="Terms not accepted.")
+        if not order_data.termsAccepted:
+            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Terms not accepted.")
 
         # Check if user info is correct
-        if not request.transaction.user or request.transaction.user.name == "" or request.transaction.user.contact == "":
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, message="User info incomplete.")
+        if not order_data.user or order_data.user.name == "" or order_data.user.contact == "":
+            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="User info incomplete.")
 
         # Check if credit card number is correct
-        if len(request.transaction.creditCard.number) != 16 or not request.transaction.creditCard.number.isdigit():
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, message="Credit card number incorrect.")
+        if len(order_data.creditCard.number) != 16 or not order_data.creditCard.number.isdigit():
+            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Credit card number incorrect.")
 
         # Check cvv
-        if len(request.transaction.creditCard.cvv) < 3 or len(request.transaction.creditCard.cvv) > 4:
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, message="Credit card CVV is not 3 or 4 digits.")
+        if len(order_data.creditCard.cvv) < 3 or len(order_data.creditCard.cvv) > 4:
+            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Credit card CVV is not 3 or 4 digits.")
 
         # Check expiration
         year, month = datetime.now().year, datetime.now().month
-        expiration_month, expiration_year = map(int, request.transaction.creditCard.expirationDate.split("/"))
+        expiration_month, expiration_year = map(int, order_data.creditCard.expirationDate.split("/"))
         expiration_year += 2000
         if expiration_month > 12 or expiration_month < 1:
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, message="Credit card expiration date invalid.")
+            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Credit card expiration date invalid.")
         if not (expiration_year >= year and expiration_month >= month):
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, message="Credit card expired.")
+            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Credit card expired.")
 
         # Return the response object
-        return transaction_verification.TransactionVerificationResponse(is_valid=True, message="User info and credit card info OK.")
+        return transaction_verification.TransactionVerificationResponse(is_valid=True, vector_clock=[0,0,0], message="User info and credit card info OK.")
 
 def serve():
     # Create a gRPC server

@@ -1,8 +1,10 @@
 syntax = "proto3";
+import "google/protobuf/empty.proto";
 
 package transaction_verification;
 
 service TransactionVerificationService {
+    rpc InitTransactionVerification(TransactionVerificationData) returns (google.protobuf.Empty);
     rpc VerifyTransaction (TransactionVerificationRequest) returns (TransactionVerificationResponse);
 }
 
@@ -23,11 +25,18 @@ message Transaction {
     bool termsAccepted =  3;
 }
 
+message TransactionVerificationData {
+    string orderId = 1;
+    Transaction data = 2;
+}
+
 message TransactionVerificationRequest {
-    Transaction transaction = 1;
+    string orderId = 1;
+    repeated int32 vector_clock = 2;
 }
 
 message TransactionVerificationResponse {
     bool is_valid = 1;
-    string message = 2;
+    repeated int32 vector_clock = 2;
+    string message = 3;
 }
