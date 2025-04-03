@@ -1,17 +1,30 @@
 syntax = "proto3";
+import "google/protobuf/empty.proto";
 
 package fraud_detection;
 
 service FraudDetectionService {
-    rpc FraudDetection (FraudDetectionRequest) returns (FraudDetectionResponse);
+    rpc InitFraudDetection(FraudDetectionData) returns (google.protobuf.Empty);
+    rpc FraudDetection(FraudDetectionRequest) returns (FraudDetectionResponse);
 }
 
-message FraudDetectionRequest {
+message OrderData {
     int32 amount = 1;
     string full_request_data = 2;
 }
 
+message FraudDetectionData {
+    string orderId = 1;
+    OrderData data = 2;
+}
+
+message FraudDetectionRequest {
+    string orderId = 1;
+    repeated int32 vector_clock = 2;
+}
+
 message FraudDetectionResponse {
     bool is_valid = 1;
-    string message = 2;
+    repeated int32 vector_clock = 2;
+    string message = 3;
 }

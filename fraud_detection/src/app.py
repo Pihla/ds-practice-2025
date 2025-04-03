@@ -11,6 +11,7 @@ fraud_detection_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/p
 sys.path.insert(0, fraud_detection_grpc_path)
 import fraud_detection_pb2 as fraud_detection
 import fraud_detection_pb2_grpc as fraud_detection_grpc
+from google.protobuf.empty_pb2 import Empty
 
 import grpc
 from concurrent import futures
@@ -21,10 +22,15 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
     def __init__(self):
         super().__init__("FraudFetectionService", 0)
 
+    def InitFraudDetection(self, request, context):
+        self.init_order(request.orderId, request.data)
+        return Empty()
+
     # Create an RPC function to detect fraud
     def FraudDetection(self, request, context):
+        order_data = self.orders[request.orderId]["data"]
         # Create a FraudDetectionResponse object
-        response = fraud_detection.FraudDetectionResponse()
+        response = fraud_detection.FraudDetectionResponse(vector_clock=[0,0,0])
 
         # Try using online AI
         try:
@@ -32,7 +38,7 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
             key = os.environ.get("GENAI_API_KEY")
 
             # Construct message to AI API
-            message_to_ai = "Analyze the book order and give me boolean True or False whether it seems valid (not fraudulent). Then put semicolon and small explanation to customer. Order: " + str(request)
+            message_to_ai = "Analyze the book order and give me boolean True or False whether it seems valid (not fraudulent). Then put semicolon and small explanation to customer. Order: " + str(order_data.full_request_data)
 
             # Send message to AI API
             print(f"Sending message to AI API for fraud detection")
@@ -59,12 +65,12 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
             print("Using simple fraud detection as fallback")
 
             # Set the fields of the response object
-            if 0 < request.amount < 50:
+            if 0 < order_data.amount < 50:
                 response.is_valid = True
-                response.message = f"Order is not fraudulent. (nr of items: {request.amount})"
+                response.message = f"Order is not fraudulent. (nr of items: {order_data.amount})"
             else:
                 response.is_valid = False
-                response.message = f"Order is fraudulent. Too many items ({request.amount})."
+                response.message = f"Order is fraudulent. Too many items ({order_data.amount})."
 
         # Print the message
         print(response.message)
