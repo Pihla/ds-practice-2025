@@ -59,8 +59,9 @@ def suggest_books(data):
         for item in data["items"]:
             ordered_books.append(suggestions.Book(bookId="000", title=item["name"], author=item["author"]))
 
+        stub.InitSuggestions(suggestions.SuggestionsData(orderId="aaa", data=ordered_books))
         # Call the service through the stub object
-        response = stub.Suggest(suggestions.SuggestionsRequest(orderedBooks=ordered_books))
+        response = stub.Suggest(suggestions.SuggestionsRequest(orderId="aaa", vector_clock=[0,0,0]))
         print(response)
     return response
 

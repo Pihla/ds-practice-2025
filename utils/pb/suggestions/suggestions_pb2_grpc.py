@@ -2,6 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 import suggestions_pb2 as suggestions__pb2
 
 
@@ -14,6 +15,11 @@ class SuggestionsServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.InitSuggestions = channel.unary_unary(
+                '/suggestions.SuggestionsService/InitSuggestions',
+                request_serializer=suggestions__pb2.SuggestionsData.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
         self.Suggest = channel.unary_unary(
                 '/suggestions.SuggestionsService/Suggest',
                 request_serializer=suggestions__pb2.SuggestionsRequest.SerializeToString,
@@ -24,6 +30,12 @@ class SuggestionsServiceStub(object):
 class SuggestionsServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
+    def InitSuggestions(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Suggest(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -33,6 +45,11 @@ class SuggestionsServiceServicer(object):
 
 def add_SuggestionsServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'InitSuggestions': grpc.unary_unary_rpc_method_handler(
+                    servicer.InitSuggestions,
+                    request_deserializer=suggestions__pb2.SuggestionsData.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
             'Suggest': grpc.unary_unary_rpc_method_handler(
                     servicer.Suggest,
                     request_deserializer=suggestions__pb2.SuggestionsRequest.FromString,
@@ -47,6 +64,23 @@ def add_SuggestionsServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class SuggestionsService(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def InitSuggestions(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/suggestions.SuggestionsService/InitSuggestions',
+            suggestions__pb2.SuggestionsData.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def Suggest(request,
