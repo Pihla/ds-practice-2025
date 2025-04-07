@@ -14,25 +14,37 @@ import orderqueue_pb2_grpc as orderqueue_grpc
 
 import grpc
 from concurrent import futures
+import queue
 
 # Create a class to define the server functions, derived from
 # orderqueue_pb2_grpc.OrderQueueServiceServicer
 class OrderQueueService(orderqueue_grpc.OrderQueueServiceServicer):
     def __init__(self):
         self.lock = threading.Lock()
-        self.queue = []
+        self.queue = queue.PriorityQueue()
 
     # Create an RPC function to Enqueue orders
     def Enqueue(self, request, context):
-        # TODO lock queue, insert request.orderId
-        # TODO return success response
-        pass
+        print("Enqueueing order", str(request))
+
+        # Extract the amount to determine priority
+        try:
+            amount = int(request.amount)
+        except ValueError:
+            amount = 1
+
+        with self.lock: # Orders with bigger amount are more important
+            self.queue.put((-amount, request))
+
+        return orderqueue.OrderQueueResponse(is_valid=True, message="Order enqueued")
 
     # Create an RPC function to Dequeue orders
     def Dequeue(self, request, context):
-        # TODO lock queue, pop an order if available
-        # TODO return dequeued order or empty result
-        pass
+        with self.lock:
+            if not self.queue.empty():
+                _, order = self.queue.get()
+                return order
+        return orderqueue.Order() # If nothing in queue, return empty Order
 
 def serve():
     # Create a gRPC server
