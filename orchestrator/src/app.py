@@ -26,6 +26,11 @@ sys.path.insert(0, transaction_verification_grpc_path)
 import transaction_verification_pb2 as transaction_verification
 import transaction_verification_pb2_grpc as transaction_verification_grpc
 
+# Set up orderqueue
+orderqueue_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/orderqueue'))
+sys.path.insert(0, orderqueue_grpc_path)
+import orderqueue_pb2 as orderqueue
+import orderqueue_pb2_grpc as orderqueue_grpc
 
 import grpc
 
@@ -95,6 +100,22 @@ def verify_transaction(order_id, data):
     print("Transaction verification finished")
     return response
 
+def enqueue_order(order_id, data):
+    print("Enqueueing order in progress")
+    with grpc.insecure_channel('orderqueue:50054') as channel:
+        # Create a stub object
+        stub = orderqueue_grpc.OrderQueueServiceStub(channel)
+
+        # Find the amount of items for the priority queue
+        amount = 0
+        for item in data["items"]:
+            amount += item["quantity"]
+
+        order_data = orderqueue.Order(orderId=order_id, full_request_data=str(data), amount=str(amount))
+        response = stub.Enqueue(order_data)
+    return response
+
+
 # Import Flask.
 # Flask is a web framework for Python.
 # It allows you to build a web application quickly.
@@ -155,14 +176,22 @@ def checkout():
     # f peale e
 
     if fraud_detection_response.is_valid and transaction_verification_response.is_valid:
-        order_status_response = {
-            'orderId': order_id,
-            'status': "Order Approved",
-            'suggestedBooks': [
-            {"bookId": book.bookId, "title": book.title, "author": book.author}
-            for book in suggestions_response.suggestedBooks
-            ]
-        }
+        queue_response = enqueue_order(order_id, request_data)
+        if queue_response.is_valid:
+            order_status_response = {
+                'orderId': order_id,
+                'status': "Order Approved",
+                'suggestedBooks': [
+                {"bookId": book.bookId, "title": book.title, "author": book.author}
+                for book in suggestions_response.suggestedBooks
+                ]
+            }
+        else: # if cannot queue the order then cannot process it
+            order_status_response = {
+                'orderId': order_id,
+                'status': "Could not process the order.",
+                'suggestedBooks': []
+            }
     else:
         order_status_response = {
             'orderId': order_id,
