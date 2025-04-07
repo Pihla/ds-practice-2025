@@ -15,6 +15,7 @@ import orderqueue_pb2_grpc as orderqueue_grpc
 import grpc
 from concurrent import futures
 import queue
+import itertools
 
 # Create a class to define the server functions, derived from
 # orderqueue_pb2_grpc.OrderQueueServiceServicer
@@ -22,10 +23,12 @@ class OrderQueueService(orderqueue_grpc.OrderQueueServiceServicer):
     def __init__(self):
         self.lock = threading.Lock()
         self.queue = queue.PriorityQueue()
+        # Counter is needed because if there is already same priority item in queue then need a tiebreak
+        self.counter = itertools.count()
 
     # Create an RPC function to Enqueue orders
     def Enqueue(self, request, context):
-        print("Enqueueing order", str(request))
+        print("Enqueueing order", str(request.orderId))
 
         # Extract the amount to determine priority
         try:
@@ -34,7 +37,8 @@ class OrderQueueService(orderqueue_grpc.OrderQueueServiceServicer):
             amount = 1
 
         with self.lock: # Orders with bigger amount are more important
-            self.queue.put((-amount, request))
+            # Counter is used because if orders have the same  priority then insert new one after the earlier one
+            self.queue.put((-amount, next(self.counter), request))
 
         return orderqueue.OrderQueueResponse(is_valid=True, message="Order enqueued")
 
@@ -42,7 +46,7 @@ class OrderQueueService(orderqueue_grpc.OrderQueueServiceServicer):
     def Dequeue(self, request, context):
         with self.lock:
             if not self.queue.empty():
-                _, order = self.queue.get()
+                _, _, order = self.queue.get()
                 return order
         return orderqueue.Order() # If nothing in queue, return empty Order
 

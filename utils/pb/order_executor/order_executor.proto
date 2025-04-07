@@ -1,0 +1,27 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+
+package order_executor;
+
+service OrderExecutorService {
+    rpc StartElection(ElectionRequest) returns (ElectionResponse);
+    rpc AnnounceLeader(LeaderInfo) returns (google.protobuf.Empty);
+    rpc Ping(google.protobuf.Empty) returns (PingResponse);
+    rpc ExecuteOrders(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+
+message ElectionRequest {
+    int32 id = 1;
+}
+
+message ElectionResponse {
+    bool is_success = 1;
+}
+
+message LeaderInfo {
+    int32 leader_id = 1;
+}
+
+message PingResponse {
+    bool is_alive = 1;
+}
