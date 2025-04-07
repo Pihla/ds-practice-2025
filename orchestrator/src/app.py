@@ -29,7 +29,7 @@ import transaction_verification_pb2_grpc as transaction_verification_grpc
 
 import grpc
 
-def detect_fraud(data):
+def detect_fraud(order_id, data):
     print("Fraud detection in progress")
 
     # Establish a connection with the fraud-detection gRPC service
@@ -43,14 +43,14 @@ def detect_fraud(data):
             amount += item["quantity"]
 
         order_data = fraud_detection.OrderData(amount=amount, full_request_data=str(data))
-        stub.InitFraudDetection(fraud_detection.FraudDetectionData(orderId="aaa", data=order_data))
+        stub.InitFraudDetection(fraud_detection.FraudDetectionData(orderId=order_id, data=order_data))
         # Call the service through the stub object
-        response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(orderId="aaa", vector_clock=[0,0,0]))
-        print(response)
+        response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(orderId=order_id, vector_clock=[0,0,0]))
+        #print(response)
     print("Fraud detection finished")
     return response
 
-def suggest_books(data):
+def suggest_books(order_id, data):
     print("Getting suggestions")
     with grpc.insecure_channel('suggestions:50053') as channel:
         # Create a stub object
@@ -61,13 +61,13 @@ def suggest_books(data):
         for item in data["items"]:
             ordered_books.append(suggestions.Book(bookId="000", title=item["name"], author=item["author"]))
 
-        stub.InitSuggestions(suggestions.SuggestionsData(orderId="aaa", data=ordered_books))
+        stub.InitSuggestions(suggestions.SuggestionsData(orderId=order_id, data=ordered_books))
         # Call the service through the stub object
-        response = stub.Suggest(suggestions.SuggestionsRequest(orderId="aaa", vector_clock=[0,0,0]))
-        print(response)
+        response = stub.Suggest(suggestions.SuggestionsRequest(orderId=order_id, vector_clock=[0,0,0]))
+        #print(response)
     return response
 
-def verify_transaction(data):
+def verify_transaction(order_id, data):
     print("Transaction verification in progress")
     with grpc.insecure_channel('transaction_verification:50052') as channel:
         # Create a stub object
@@ -88,10 +88,10 @@ def verify_transaction(data):
                 ),
             termsAccepted=data["termsAccepted"]
         )
-        stub.InitTransactionVerification(transaction_verification.TransactionVerificationData(orderId="aaa", data=transaction_request_data))
+        stub.InitTransactionVerification(transaction_verification.TransactionVerificationData(orderId=order_id, data=transaction_request_data))
         # Call the service through the stub object
-        response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(orderId="aaa", vector_clock=[0,0,0]))
-        print(response)
+        response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(orderId=order_id, vector_clock=[0,0,0]))
+        #print(response)
     print("Transaction verification finished")
     return response
 
@@ -131,9 +131,12 @@ def checkout():
     # Print request object data
     print("POST REQUEST Data:", request_data)
 
+    # Define order id
+    order_id = str(uuid.uuid4())
+
     # Use threads for fraud detection, transaction verification and book suggestions
     with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = [executor.submit(f, request_data) for f in [detect_fraud, verify_transaction, suggest_books]]
+        futures = [executor.submit(f, order_id, request_data) for f in [detect_fraud, verify_transaction, suggest_books]]
         fraud_detection_response, transaction_verification_response, suggestions_response = [future.result() for future in futures]
 
 
@@ -150,9 +153,6 @@ def checkout():
     # d peale b-d, aga võib samal ajal kui c
     # e peale c ja d
     # f peale e
-
-    # Define order id
-    order_id = str(uuid.uuid4())
 
     if fraud_detection_response.is_valid and transaction_verification_response.is_valid:
         order_status_response = {
