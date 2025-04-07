@@ -38,7 +38,7 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
             key = os.environ.get("GENAI_API_KEY")
 
             # Construct message to AI API
-            message_to_ai = "Analyze the book order and give me boolean True or False whether it seems valid (not fraudulent). Then put semicolon and small explanation to customer. Order: " + str(order_data.full_request_data)
+            message_to_ai = "Analyze the book order and for the first word give me boolean True or False whether it seems valid (not fraudulent). Then put semicolon and small explanation to customer. Order: " + str(order_data.full_request_data)
 
             # Send message to AI API
             print(f"Sending message to AI API for fraud detection")
@@ -47,7 +47,7 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
                 model="gemini-2.0-flash",
                 contents=message_to_ai
             ).text
-            print(f"AI API responded to fraud detection: {ai_api_response}")
+            #print(f"AI API responded to fraud detection: {ai_api_response}")
 
             # Convert API response to correct format
             ai_api_response = ai_api_response.split(";")

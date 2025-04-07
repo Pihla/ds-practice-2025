@@ -101,7 +101,6 @@ def verify_transaction(order_id, data):
     return response
 
 def enqueue_order(order_id, data):
-    print("Enqueueing order in progress")
     with grpc.insecure_channel('orderqueue:50054') as channel:
         # Create a stub object
         stub = orderqueue_grpc.OrderQueueServiceStub(channel)

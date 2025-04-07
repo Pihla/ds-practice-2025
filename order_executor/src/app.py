@@ -41,7 +41,7 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
         }
         self.all_addresses.pop(self.id)
 
-        if self.id == 1:
+        if self.id == 4:
             print(f"[{self.id}] Starting first election.")
             self.start_election()
         threading.Thread(target=self.try_execute_orders, daemon=True).start()

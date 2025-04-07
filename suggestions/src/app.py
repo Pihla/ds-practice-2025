@@ -44,7 +44,7 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer, BaseServic
                 model="gemini-2.0-flash",
                 contents=message_to_ai
             ).text
-            print(f"Suggestions AI API responded: {ai_api_response}")
+            #print(f"Suggestions AI API responded: {ai_api_response}")
 
             # Convert API response to correct format
             ai_api_response = ai_api_response.split(";")
