@@ -8,14 +8,26 @@ service FraudDetectionService {
     rpc FraudDetection(FraudDetectionRequest) returns (FraudDetectionResponse);
 }
 
-message OrderData {
-    int32 amount = 1;
-    string full_request_data = 2;
+message User {
+    string name = 1;
+    string contact = 2;
+}
+
+message CreditCard {
+    string number = 1;
+    string expirationDate = 2;
+    string cvv = 3;
+}
+
+message Transaction {
+    User user = 1;
+    CreditCard creditCard = 2;
+    bool termsAccepted =  3;
 }
 
 message FraudDetectionData {
     string orderId = 1;
-    OrderData data = 2;
+    Transaction data = 2;
 }
 
 message FraudDetectionRequest {

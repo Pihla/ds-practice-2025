@@ -1,0 +1,25 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+
+package orchestrator;
+
+service OrchestratorService {
+    rpc AcceptOrderNotApprovedMessage(OrderNotApprovedData) returns (google.protobuf.Empty);
+    rpc AcceptBookSuggestions(BookSuggestions) returns (google.protobuf.Empty);
+}
+
+message OrderNotApprovedData {
+    string orderId = 1;
+    string message = 2;
+}
+
+message Book {
+    string bookId = 1;
+    string title = 2;
+    string author = 3;
+}
+
+message BookSuggestions {
+    string orderId = 1;
+    repeated Book suggestedBooks = 2;
+}

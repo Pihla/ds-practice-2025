@@ -20,40 +20,58 @@ from concurrent import futures
 # transaction_verification_pb2_grpc.HelloServiceServicer
 class TransactionVerificationService(transaction_verification_grpc.TransactionVerificationServiceServicer, BaseService):
     def __init__(self):
-        super().__init__("TransactionVerificationService", 2)
+        super().__init__("TransactionVerificationService", 0)
+        self.when_to_execute_methods = [
+            {"method": self.check_that_terms_are_accepted, "min_vc_for_exec": [0, 0, 0]},
+            {"method": self.verify_user_info, "min_vc_for_exec": [1, 0, 0]},
+            {"method": self.verify_credit_card_info, "min_vc_for_exec": [2, 0, 0]}]
 
-    def InitTransactionVerification(self, request, context):
-        self.init_order(request.orderId, request.data)
-        return Empty()
-
-    def VerifyTransaction(self, request, context):
-        order_data = self.orders[request.orderId]["data"]
-        # Check whether terms are accepted
+    # Checks whether terms are accepted
+    def check_that_terms_are_accepted(self, order_id):
+        print("Check that terms are accepted.")
+        order_data = self.orders[order_id]["data"]
         if not order_data.termsAccepted:
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Terms not accepted.")
+            self.send_order_failure_to_orchestrator(order_id, "Terms are not accepted.")
 
-        # Check if user info is correct
+    # Checks that user info is valid
+    def verify_user_info(self, order_id):
+        print("Verify user info.")
+        order_data = self.orders[order_id]["data"]
         if not order_data.user or order_data.user.name == "" or order_data.user.contact == "":
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="User info incomplete.")
+            self.send_order_failure_to_orchestrator(order_id, "User info incomplete.")
+
+    # Checks that credit card info is valid
+    def verify_credit_card_info(self, order_id):
+        print("Verify credit card info.")
+        order_data = self.orders[order_id]["data"]
 
         # Check if credit card number is correct
         if len(order_data.creditCard.number) != 16 or not order_data.creditCard.number.isdigit():
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Credit card number incorrect.")
+            self.send_order_failure_to_orchestrator(order_id, "Credit card number incorrect.")
+            return
 
         # Check cvv
         if len(order_data.creditCard.cvv) < 3 or len(order_data.creditCard.cvv) > 4:
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Credit card CVV is not 3 or 4 digits.")
+            self.send_order_failure_to_orchestrator(order_id, "Credit card CVV is not 3 or 4 digits.")
+            return
 
         # Check expiration
         year, month = datetime.now().year, datetime.now().month
         expiration_month, expiration_year = map(int, order_data.creditCard.expirationDate.split("/"))
         expiration_year += 2000
         if expiration_month > 12 or expiration_month < 1:
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Credit card expiration date invalid.")
+            self.send_order_failure_to_orchestrator(order_id, "Credit card expiration date invalid.")
+            return
         if not (expiration_year >= year and expiration_month >= month):
-            return transaction_verification.TransactionVerificationResponse(is_valid=False, vector_clock=[0,0,0], message="Credit card expired.")
+            self.send_order_failure_to_orchestrator(order_id, "Credit card expired.")
+            return
 
-        # Return the response object
+    def InitTransactionVerification(self, request, context):
+        self.init_order(request.orderId, request.data)
+        return Empty()
+
+    def VerifyTransaction(self, request, context):
+        self.handle_incoming_vector_clock(request.orderId, request.vector_clock)
         return transaction_verification.TransactionVerificationResponse(is_valid=True, vector_clock=[0,0,0], message="User info and credit card info OK.")
 
 def serve():

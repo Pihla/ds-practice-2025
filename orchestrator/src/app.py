@@ -1,12 +1,21 @@
 import sys
 import os
 from concurrent.futures import ThreadPoolExecutor
+from concurrent import futures
 import uuid
+import time
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
 # Change these lines only if strictly needed.
 FILE = __file__ if '__file__' in globals() else os.getenv("PYTHONFILE", "")
+
+# Set up orchestrator
+orchestrator_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/orchestrator'))
+sys.path.insert(0, orchestrator_grpc_path)
+import orchestrator_pb2 as orchestrator
+import orchestrator_pb2_grpc as orchestrator_grpc
+from google.protobuf.empty_pb2 import Empty
 
 # Set up fraud detection
 fraud_detection_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/fraud_detection'))
@@ -31,49 +40,28 @@ orderqueue_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/ord
 sys.path.insert(0, orderqueue_grpc_path)
 import orderqueue_pb2 as orderqueue
 import orderqueue_pb2_grpc as orderqueue_grpc
-
 import grpc
 
-def detect_fraud(order_id, data):
-    print("Fraud detection in progress")
+active_orders = {}
 
-    # Establish a connection with the fraud-detection gRPC service
-    with grpc.insecure_channel('fraud_detection:50051') as channel:
-        # Create a stub object
-        stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
+class OrchestratorService(orchestrator_grpc.OrchestratorServiceServicer):
+    # Create an RPC function to handle book suggestions
+    def AcceptBookSuggestions(self, request, context):
+        order_id = request.orderId
+        print(f"Received book suggestions for order {order_id}")
+        active_orders[order_id] = {"status": "success", "suggested_books": request.suggestedBooks}
+        return Empty()
 
-        # Calculate total amount of items
-        amount = 0
-        for item in data["items"]:
-            amount += item["quantity"]
+    # Create an RPC function to handle rejected order
+    def AcceptOrderNotApprovedMessage(self, request, context):
+        order_id = request.orderId
+        print(f"Received order not approves message for order {order_id}, message: {request.message}")
+        active_orders[order_id] = {"status": "failure", "message": request.message}
+        return Empty()
 
-        order_data = fraud_detection.OrderData(amount=amount, full_request_data=str(data))
-        stub.InitFraudDetection(fraud_detection.FraudDetectionData(orderId=order_id, data=order_data))
-        # Call the service through the stub object
-        response = stub.FraudDetection(fraud_detection.FraudDetectionRequest(orderId=order_id, vector_clock=[0,0,0]))
-        #print(response)
-    print("Fraud detection finished")
-    return response
-
-def suggest_books(order_id, data):
-    print("Getting suggestions")
-    with grpc.insecure_channel('suggestions:50053') as channel:
-        # Create a stub object
-        stub = suggestions_grpc.SuggestionsServiceStub(channel)
-
-        # Create list of ordered books
-        ordered_books = []
-        for item in data["items"]:
-            ordered_books.append(suggestions.Book(bookId="000", title=item["name"], author=item["author"]))
-
-        stub.InitSuggestions(suggestions.SuggestionsData(orderId=order_id, data=ordered_books))
-        # Call the service through the stub object
-        response = stub.Suggest(suggestions.SuggestionsRequest(orderId=order_id, vector_clock=[0,0,0]))
-        #print(response)
-    return response
-
-def verify_transaction(order_id, data):
-    print("Transaction verification in progress")
+# Sends new order to transaction verification service using gRPC
+def send_new_order_to_transaction_verification_service(order_id, data):
+    print("Sending new order details to transaction verification service")
     with grpc.insecure_channel('transaction_verification:50052') as channel:
         # Create a stub object
         stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
@@ -94,12 +82,49 @@ def verify_transaction(order_id, data):
             termsAccepted=data["termsAccepted"]
         )
         stub.InitTransactionVerification(transaction_verification.TransactionVerificationData(orderId=order_id, data=transaction_request_data))
-        # Call the service through the stub object
-        response = stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(orderId=order_id, vector_clock=[0,0,0]))
-        #print(response)
-    print("Transaction verification finished")
-    return response
+        stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(orderId=order_id, vector_clock=[0, 0, 0]))
 
+# Sends new order to fraud detection service using gRPC
+def send_new_order_to_fraud_detection_service(order_id, data):
+    print("Sending new order details to fraud detection service")
+    with grpc.insecure_channel('fraud_detection:50051') as channel:
+        # Create a stub object
+        stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
+
+        # Create transaction object
+        fraud_detection_request_data = fraud_detection.Transaction(
+            user=
+            fraud_detection.User(
+                name=data["user"]["name"],
+                contact=data["user"]["contact"]
+            ),
+            creditCard=
+            fraud_detection.CreditCard(
+                number=data["creditCard"]["number"],
+                expirationDate=data["creditCard"]["expirationDate"],
+                cvv=data["creditCard"]["cvv"]
+            ),
+            termsAccepted=data["termsAccepted"]
+        )
+        stub.InitFraudDetection(fraud_detection.FraudDetectionData(orderId=order_id, data=fraud_detection_request_data))
+        stub.FraudDetection(fraud_detection.FraudDetectionRequest(orderId=order_id, vector_clock=[0, 0, 0]))
+
+# Sends new order to suggestions service using gRPC
+def send_new_order_to_suggestions_service(order_id, data):
+    print("Sending new order details to suggestions service")
+    with grpc.insecure_channel('suggestions:50053') as channel:
+        # Create a stub object
+        stub = suggestions_grpc.SuggestionsServiceStub(channel)
+
+        # Create list of ordered books
+        ordered_books = []
+        for item in data["items"]:
+            ordered_books.append(suggestions.Book(bookId="000", title=item["name"], author=item["author"]))
+
+        stub.InitSuggestions(suggestions.SuggestionsData(orderId=order_id, data=ordered_books))
+        stub.Suggest(suggestions.SuggestionsRequest(orderId=order_id, vector_clock=[0, 0, 0]))
+
+# Enqueues order
 def enqueue_order(order_id, data):
     with grpc.insecure_channel('orderqueue:50054') as channel:
         # Create a stub object
@@ -113,7 +138,6 @@ def enqueue_order(order_id, data):
         order_data = orderqueue.Order(orderId=order_id, full_request_data=str(data), amount=str(amount))
         response = stub.Enqueue(order_data)
     return response
-
 
 # Import Flask.
 # Flask is a web framework for Python.
@@ -154,35 +178,34 @@ def checkout():
     # Define order id
     order_id = str(uuid.uuid4())
 
-    # Use threads for fraud detection, transaction verification and book suggestions
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = [executor.submit(f, order_id, request_data) for f in [detect_fraud, verify_transaction, suggest_books]]
-        fraud_detection_response, transaction_verification_response, suggestions_response = [future.result() for future in futures]
+    # Add current order to dictionary of active orders
+    active_orders[order_id] = {"status": "processing"}
 
+    # Use threads to send new order details to fraud detection, transaction verification and book suggestions services
+    threadpool_executor = ThreadPoolExecutor(max_workers=3)
 
-    #TODO iga meetodi thread ja event ordering.
-    # a - terms accepted (TV)
-    # b - user info ok (TV)
-    # c - credit card info ok (TV)
-    # d - fraud detect user (FD)
-    # e - fraud detect credit card (FD)
-    # f - suggestions (S)
+    for f in [
+        send_new_order_to_transaction_verification_service,
+        send_new_order_to_fraud_detection_service,
+        send_new_order_to_suggestions_service,
+    ]:
+        threadpool_executor.submit(f, order_id, request_data)
 
-    # a võib samal ajal kui b
-    # c peale a-d (aga võib samal ajal kui b)
-    # d peale b-d, aga võib samal ajal kui c
-    # e peale c ja d
-    # f peale e
+    # Check if order has been processed
+    while active_orders[order_id]["status"] == "processing":
+        time.sleep(0.1)
 
-    if fraud_detection_response.is_valid and transaction_verification_response.is_valid:
+    # Check if order is accepted or rejected and construct response to frontend
+    if active_orders[order_id]["status"] == "success":
         queue_response = enqueue_order(order_id, request_data)
         if queue_response.is_valid:
+            suggested_books = active_orders[order_id]["suggested_books"]
             order_status_response = {
                 'orderId': order_id,
                 'status': "Order Approved",
                 'suggestedBooks': [
-                {"bookId": book.bookId, "title": book.title, "author": book.author}
-                for book in suggestions_response.suggestedBooks
+                    {"bookId": book.bookId, "title": book.title, "author": book.author}
+                    for book in suggested_books
                 ]
             }
         else: # if cannot queue the order then cannot process it
@@ -192,16 +215,44 @@ def checkout():
                 'suggestedBooks': []
             }
     else:
+        failure_message = active_orders[order_id]["message"]
         order_status_response = {
             'orderId': order_id,
-            'status': f"Order not approved. \n{fraud_detection_response.message}\n{transaction_verification_response.message}",
+            'status': f"Order not approved. {failure_message}",
             'suggestedBooks': []
         }
+
+    # Delete current order from dictionary of active orders
+    del active_orders[order_id]
+
     return order_status_response
 
 
-if __name__ == '__main__':
+def serve():
+    # Create a gRPC server
+    server = grpc.server(futures.ThreadPoolExecutor())
+
+    # Add OrchestraroeService
+    orchestrator_grpc.add_OrchestratorServiceServicer_to_server(OrchestratorService(), server)
+
+    # Listen on port 5001
+    port = "5001"
+    server.add_insecure_port("[::]:" + port)
+
+    # Start the server
+    server.start()
+    print(f"Server started. Listening on port {port}.")
+
+    # Keep thread alive
+    server.wait_for_termination()
+
+def run():
     # Run the app in debug mode to enable hot reloading.
     # This is useful for development.
     # The default port is 5000.
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=5000)
+
+if __name__ == '__main__':
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        executor.submit(serve)
+        executor.submit(run)

@@ -14,13 +14,41 @@ class OrderData(_message.Message):
     full_request_data: str
     def __init__(self, amount: _Optional[int] = ..., full_request_data: _Optional[str] = ...) -> None: ...
 
+class User(_message.Message):
+    __slots__ = ("name", "contact")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    CONTACT_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    contact: str
+    def __init__(self, name: _Optional[str] = ..., contact: _Optional[str] = ...) -> None: ...
+
+class CreditCard(_message.Message):
+    __slots__ = ("number", "expirationDate", "cvv")
+    NUMBER_FIELD_NUMBER: _ClassVar[int]
+    EXPIRATIONDATE_FIELD_NUMBER: _ClassVar[int]
+    CVV_FIELD_NUMBER: _ClassVar[int]
+    number: str
+    expirationDate: str
+    cvv: str
+    def __init__(self, number: _Optional[str] = ..., expirationDate: _Optional[str] = ..., cvv: _Optional[str] = ...) -> None: ...
+
+class Transaction(_message.Message):
+    __slots__ = ("user", "creditCard", "termsAccepted")
+    USER_FIELD_NUMBER: _ClassVar[int]
+    CREDITCARD_FIELD_NUMBER: _ClassVar[int]
+    TERMSACCEPTED_FIELD_NUMBER: _ClassVar[int]
+    user: User
+    creditCard: CreditCard
+    termsAccepted: bool
+    def __init__(self, user: _Optional[_Union[User, _Mapping]] = ..., creditCard: _Optional[_Union[CreditCard, _Mapping]] = ..., termsAccepted: bool = ...) -> None: ...
+
 class FraudDetectionData(_message.Message):
     __slots__ = ("orderId", "data")
     ORDERID_FIELD_NUMBER: _ClassVar[int]
     DATA_FIELD_NUMBER: _ClassVar[int]
     orderId: str
-    data: OrderData
-    def __init__(self, orderId: _Optional[str] = ..., data: _Optional[_Union[OrderData, _Mapping]] = ...) -> None: ...
+    data: Transaction
+    def __init__(self, orderId: _Optional[str] = ..., data: _Optional[_Union[Transaction, _Mapping]] = ...) -> None: ...
 
 class FraudDetectionRequest(_message.Message):
     __slots__ = ("orderId", "vector_clock")
