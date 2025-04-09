@@ -46,6 +46,7 @@ class BaseService:
     def init_order(self, order_id, data):
         self.orders[order_id] = {"data": data, "vector_clock": [0]*self.total_svcs}
         print(f"Order {order_id} initialized.")
+        self.do_actions_based_on_vector_clock(order_id)
 
     # Increments vector clock of order with given id by 1 for current service
     def increment_vector_clock(self, order_id):

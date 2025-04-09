@@ -82,7 +82,6 @@ def send_new_order_to_transaction_verification_service(order_id, data):
             termsAccepted=data["termsAccepted"]
         )
         stub.InitTransactionVerification(transaction_verification.TransactionVerificationData(orderId=order_id, data=transaction_request_data))
-        stub.UpdateVectorClock(transaction_verification.VectorClockStatus(orderId=order_id, vector_clock=[0, 0, 0]))
 
 # Sends new order to fraud detection service using gRPC
 def send_new_order_to_fraud_detection_service(order_id, data):
@@ -107,7 +106,6 @@ def send_new_order_to_fraud_detection_service(order_id, data):
             termsAccepted=data["termsAccepted"]
         )
         stub.InitFraudDetection(fraud_detection.FraudDetectionData(orderId=order_id, data=fraud_detection_request_data))
-        stub.UpdateVectorClock(fraud_detection.VectorClockStatus(orderId=order_id, vector_clock=[0, 0, 0]))
 
 # Sends new order to suggestions service using gRPC
 def send_new_order_to_suggestions_service(order_id, data):
@@ -122,7 +120,6 @@ def send_new_order_to_suggestions_service(order_id, data):
             ordered_books.append(suggestions.Book(bookId="000", title=item["name"], author=item["author"]))
 
         stub.InitSuggestions(suggestions.SuggestionsData(orderId=order_id, data=ordered_books))
-        stub.UpdateVectorClock(suggestions.VectorClockStatus(orderId=order_id, vector_clock=[0, 0, 0]))
 
 # Deletes order from suggestions service
 def delete_order_from_suggestions_service(order_id, vector_clock):
