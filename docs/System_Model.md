@@ -1,0 +1,13 @@
+# System model decription
+
+The online bookstore uses client-server model, where user can fill order information in the frontend, sends it to the server, and orchestrator starts processing it. HTTP protocol is used for client-server connection. 
+
+Orchestrator uses transaction verification, fraud detection and suggestions services to find if the order is valid and get book suggestions for the user. Order details are sent to all three services and each service starts processing the order based on vector clock values. After a service has done a task, it sends updated vector clock to other 2 services using gRPC, so the other services have updated information about how far the processing is and which tasks can be done. 
+
+Fraud detection and suggestions services use HTTP to make requests to Google Generative AI to do fraud detection and suggest services. If there is a connection problem or AI response is not in correct format, there are simple fallback fraud detection methods and hardcoded fallback book suggestions.
+
+When transaction verification or fraud detection fails, corresponding message is sent to orchestrator via gRPC, after which the orchestrator stops all threads that process the order in the 3 services, and sends order disapproved response to the client. If transaction verification and fraud detection succeed and suggestions service has found some book recommendations, suggestion service sends recommendations to the orchestrator who closes threads.
+
+After that, orchestrator sends final vector clock to all 3 services and asks them to confirm that the service’s vector clock value is smaller or equal to the final vector clock value. If not, then error is logged in both the service and the orchestrator. If vector clock values are valid, the order is deleted from order list in each service.
+
+After order has been validated and suggestions have been made, the orchestrator sends order to the Order Queue which enqueues the order to a priority queue based on the amount of books the order has. The system prioritizes orders with more books and if there are multiple orders with same amount of books the system will execute them based on earliest arrival. The dequeued orders get processed by the Order Executor which has 4 replicas. Only one of the replicas is chosen to be the leader by Bully algorithm and dequeues orders. Non-leader replicas constantly ping the leader and if the leader is unresponsive they start a leader election where the highest id node that is responsive wins. When the node wins it sends an announcement to all other nodes that are alive. If the previous leader restarts then it calls a new election. If order has been processed, then response is sent to the client with order confirmation.
