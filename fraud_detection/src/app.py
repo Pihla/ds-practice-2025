@@ -50,7 +50,11 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
     # Checks user info for fraud
     def check_user_info_for_fraud(self, order_id):
         print("Check user info for fraud")
-        order_data = self.orders[order_id]["data"]
+        try:
+            order_data = self.orders[order_id]["data"]
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
         user_info = order_data.user
 
         # Construct message to AI API
@@ -83,7 +87,11 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
     # Checks credit card info for fraud
     def check_credit_card_info_for_fraud(self, order_id):
         print("Check credit card info for fraud")
-        order_data = self.orders[order_id]["data"]
+        try:
+            order_data = self.orders[order_id]["data"]
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
         credit_card_info = order_data.creditCard
 
         # Construct message to AI API

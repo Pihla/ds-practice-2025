@@ -32,7 +32,11 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer, BaseServic
     # Finds book suggestions and sends them to orchestrator
     def find_suggestions_and_send_to_orchestrator(self, order_id):
         print("Find suggestions.")
-        ordered_books = self.orders[order_id]["data"]
+        try:
+            ordered_books = self.orders[order_id]["data"]
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
 
         # Try using online AI
         try:

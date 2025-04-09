@@ -29,21 +29,33 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
     # Checks whether terms are accepted
     def check_that_terms_are_accepted(self, order_id):
         print("Check that terms are accepted.")
-        order_data = self.orders[order_id]["data"]
+        try:
+            order_data = self.orders[order_id]["data"]
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return        
         if not order_data.termsAccepted:
             self.send_order_failure_to_orchestrator(order_id, "Terms are not accepted.")
 
     # Checks that user info is valid
     def verify_user_info(self, order_id):
         print("Verify user info.")
-        order_data = self.orders[order_id]["data"]
+        try:
+            order_data = self.orders[order_id]["data"]
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
         if not order_data.user or order_data.user.name == "" or order_data.user.contact == "":
             self.send_order_failure_to_orchestrator(order_id, "User info incomplete.")
 
     # Checks that credit card info is valid
     def verify_credit_card_info(self, order_id):
         print("Verify credit card info.")
-        order_data = self.orders[order_id]["data"]
+        try:
+            order_data = self.orders[order_id]["data"]
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
 
         # Check if credit card number is correct
         if len(order_data.creditCard.number) != 16 or not order_data.creditCard.number.isdigit():

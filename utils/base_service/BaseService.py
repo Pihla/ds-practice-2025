@@ -50,20 +50,32 @@ class BaseService:
 
     # Increments vector clock of order with given id by 1 for current service
     def increment_vector_clock(self, order_id):
-        self.orders[order_id]["vector_clock"][self.svc_indx] += 1
-        print(f"Incremented vector clock for order {order_id}. New vector clock: {self.orders[order_id]['vector_clock']}. Value of current service: {self.orders[order_id]['vector_clock'][self.svc_indx]}")
+        try:
+            self.orders[order_id]["vector_clock"][self.svc_indx] += 1
+            print(f"Incremented vector clock for order {order_id}. New vector clock: {self.orders[order_id]['vector_clock']}. Value of current service: {self.orders[order_id]['vector_clock'][self.svc_indx]}")
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
 
     # Combines local and incoming vector clocks of order with given id by taking biggest value for each service
     def merge_with_incoming_vector_clock(self, order_id, incoming_vc):
-        local_vc = self.orders[order_id]["vector_clock"]
-        for i in range(self.total_svcs):
-            local_vc[i] = max(local_vc[i], incoming_vc[i])
-        print(f"Merged incoming and local vector clocks. New vector clock: {local_vc}")
+        try:
+            local_vc = self.orders[order_id]["vector_clock"]
+            for i in range(self.total_svcs):
+                local_vc[i] = max(local_vc[i], incoming_vc[i])
+            print(f"Merged incoming and local vector clocks. New vector clock: {local_vc}")
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
 
     # Sends current vector clock to all services
     def send_vector_clock_to_others(self, order_id):
         print("Sending vector clock to other services")
-        vector_clock = self.orders[order_id]["vector_clock"]
+        try:
+            vector_clock = self.orders[order_id]["vector_clock"]
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
 
         def send_vc_to_fraud_detection():
             if self.svc_indx != 1:
@@ -97,7 +109,7 @@ class BaseService:
 
     # Checks if value of vc1 is at least the same as value of vc2
     def vector_clock_is_at_least(self, vc1, vc2):
-        print("comparing", vc1, vc2)
+        # print("comparing", vc1, vc2)
         for i in range(len(vc1)):
             if vc1[i] < vc2[i]:
                 return False
@@ -106,18 +118,22 @@ class BaseService:
     # Looks at vector clock for order with given id and decides if any of the methods should be executed in this service.
     # Executes all necessary methods and sends updated vector clock to other services
     def do_actions_based_on_vector_clock(self, order_id, depth=0):
-        vector_clock = self.orders[order_id]["vector_clock"]
-        print(f"Searching for the next action based on vector clock {vector_clock} for order {order_id}.")
-        for possible_method in self.when_to_execute_methods:
-            if self.vector_clock_is_at_least(vector_clock, possible_method["min_vc_for_exec"]): # if all preconditions are fulfilled
-                if possible_method["min_vc_for_exec"][self.svc_indx] == vector_clock[self.svc_indx]: # if function hasn't already been executed
-                    self.increment_vector_clock(order_id)
-                    possible_method["method"](order_id)
-                    print(f"Called function {possible_method['method']}")
-                    self.do_actions_based_on_vector_clock(order_id, depth + 1) # call itself recursively to check if new action can be done in current service
-        if depth == 1: # if vector clock has changed (depth=1 means that at least one action was done which means that vc changed)
-            print(f"Sending vector clock {vector_clock} for order {order_id} to other services because nothing to do in current service.")
-            self.send_vector_clock_to_others(order_id)
+        try:
+            vector_clock = self.orders[order_id]["vector_clock"]
+            print(f"Searching for the next action based on vector clock {vector_clock} for order {order_id}.")
+            for possible_method in self.when_to_execute_methods:
+                if self.vector_clock_is_at_least(vector_clock, possible_method["min_vc_for_exec"]): # if all preconditions are fulfilled
+                    if possible_method["min_vc_for_exec"][self.svc_indx] == vector_clock[self.svc_indx]: # if function hasn't already been executed
+                        self.increment_vector_clock(order_id)
+                        possible_method["method"](order_id)
+                        print(f"Called function {possible_method['method']}")
+                        self.do_actions_based_on_vector_clock(order_id, depth + 1) # call itself recursively to check if new action can be done in current service
+            if depth == 1: # if vector clock has changed (depth=1 means that at least one action was done which means that vc changed)
+                print(f"Sending vector clock {vector_clock} for order {order_id} to other services because nothing to do in current service.")
+                self.send_vector_clock_to_others(order_id)
+        except KeyError as e:
+            print(f"Order was probably deleted. KeyError: {e}")
+            return
 
     # Handles incoming vector clock
     def handle_incoming_vector_clock(self, order_id, incoming_vc):
