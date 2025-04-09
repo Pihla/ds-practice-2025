@@ -214,6 +214,9 @@ def checkout():
     while active_orders[order_id]["status"] == "processing":
         time.sleep(0.1)
 
+    # Send shutdown signal to threads
+    threadpool_executor.shutdown(wait=False)
+
     # Check if order is accepted or rejected and construct response to frontend
     if active_orders[order_id]["status"] == "success":
         queue_response = enqueue_order(order_id, request_data)
