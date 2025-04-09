@@ -5,7 +5,8 @@ package suggestions;
 
 service SuggestionsService {
     rpc InitSuggestions(SuggestionsData) returns (google.protobuf.Empty);
-    rpc Suggest(SuggestionsRequest) returns (SuggestionsResponse);
+    rpc UpdateVectorClock(VectorClockStatus) returns (google.protobuf.Empty);
+    rpc DeleteCompletedOrder (VectorClockStatus) returns (DeletionResponse);
 }
 
 message Book {
@@ -19,12 +20,12 @@ message SuggestionsData {
     repeated Book data = 2;
 }
 
-message SuggestionsRequest {
+message VectorClockStatus {
     string orderId = 1;
     repeated int32 vector_clock = 2;
 }
 
-message SuggestionsResponse {
-    repeated int32 vector_clock = 1;
-    repeated Book suggestedBooks = 2;
+message DeletionResponse {
+    bool everythingOK = 1;
+    string message = 2;
 }

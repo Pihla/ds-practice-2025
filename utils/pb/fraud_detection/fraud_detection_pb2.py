@@ -15,27 +15,25 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x66raud_detection.proto\x12\x0f\x66raud_detection\x1a\x1bgoogle/protobuf/empty.proto\"6\n\tOrderData\x12\x0e\n\x06\x61mount\x18\x01 \x01(\x05\x12\x19\n\x11\x66ull_request_data\x18\x02 \x01(\t\"%\n\x04User\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontact\x18\x02 \x01(\t\"A\n\nCreditCard\x12\x0e\n\x06number\x18\x01 \x01(\t\x12\x16\n\x0e\x65xpirationDate\x18\x02 \x01(\t\x12\x0b\n\x03\x63vv\x18\x03 \x01(\t\"z\n\x0bTransaction\x12#\n\x04user\x18\x01 \x01(\x0b\x32\x15.fraud_detection.User\x12/\n\ncreditCard\x18\x02 \x01(\x0b\x32\x1b.fraud_detection.CreditCard\x12\x15\n\rtermsAccepted\x18\x03 \x01(\x08\"Q\n\x12\x46raudDetectionData\x12\x0f\n\x07orderId\x18\x01 \x01(\t\x12*\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x1c.fraud_detection.Transaction\">\n\x15\x46raudDetectionRequest\x12\x0f\n\x07orderId\x18\x01 \x01(\t\x12\x14\n\x0cvector_clock\x18\x02 \x03(\x05\"Q\n\x16\x46raudDetectionResponse\x12\x10\n\x08is_valid\x18\x01 \x01(\x08\x12\x14\n\x0cvector_clock\x18\x02 \x03(\x05\x12\x0f\n\x07message\x18\x03 \x01(\t2\xcd\x01\n\x15\x46raudDetectionService\x12Q\n\x12InitFraudDetection\x12#.fraud_detection.FraudDetectionData\x1a\x16.google.protobuf.Empty\x12\x61\n\x0e\x46raudDetection\x12&.fraud_detection.FraudDetectionRequest\x1a\'.fraud_detection.FraudDetectionResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x66raud_detection.proto\x12\x0f\x66raud_detection\x1a\x1bgoogle/protobuf/empty.proto\"%\n\x04User\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontact\x18\x02 \x01(\t\"A\n\nCreditCard\x12\x0e\n\x06number\x18\x01 \x01(\t\x12\x16\n\x0e\x65xpirationDate\x18\x02 \x01(\t\x12\x0b\n\x03\x63vv\x18\x03 \x01(\t\"z\n\x0bTransaction\x12#\n\x04user\x18\x01 \x01(\x0b\x32\x15.fraud_detection.User\x12/\n\ncreditCard\x18\x02 \x01(\x0b\x32\x1b.fraud_detection.CreditCard\x12\x15\n\rtermsAccepted\x18\x03 \x01(\x08\"Q\n\x12\x46raudDetectionData\x12\x0f\n\x07orderId\x18\x01 \x01(\t\x12*\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x1c.fraud_detection.Transaction\":\n\x11VectorClockStatus\x12\x0f\n\x07orderId\x18\x01 \x01(\t\x12\x14\n\x0cvector_clock\x18\x02 \x03(\x05\"9\n\x10\x44\x65letionResponse\x12\x14\n\x0c\x65verythingOK\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t2\x9a\x02\n\x15\x46raudDetectionService\x12Q\n\x12InitFraudDetection\x12#.fraud_detection.FraudDetectionData\x1a\x16.google.protobuf.Empty\x12O\n\x11UpdateVectorClock\x12\".fraud_detection.VectorClockStatus\x1a\x16.google.protobuf.Empty\x12]\n\x14\x44\x65leteCompletedOrder\x12\".fraud_detection.VectorClockStatus\x1a!.fraud_detection.DeletionResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'fraud_detection_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
-  _globals['_ORDERDATA']._serialized_start=71
-  _globals['_ORDERDATA']._serialized_end=125
-  _globals['_USER']._serialized_start=127
-  _globals['_USER']._serialized_end=164
-  _globals['_CREDITCARD']._serialized_start=166
-  _globals['_CREDITCARD']._serialized_end=231
-  _globals['_TRANSACTION']._serialized_start=233
-  _globals['_TRANSACTION']._serialized_end=355
-  _globals['_FRAUDDETECTIONDATA']._serialized_start=357
-  _globals['_FRAUDDETECTIONDATA']._serialized_end=438
-  _globals['_FRAUDDETECTIONREQUEST']._serialized_start=440
-  _globals['_FRAUDDETECTIONREQUEST']._serialized_end=502
-  _globals['_FRAUDDETECTIONRESPONSE']._serialized_start=504
-  _globals['_FRAUDDETECTIONRESPONSE']._serialized_end=585
-  _globals['_FRAUDDETECTIONSERVICE']._serialized_start=588
-  _globals['_FRAUDDETECTIONSERVICE']._serialized_end=793
+  _globals['_USER']._serialized_start=71
+  _globals['_USER']._serialized_end=108
+  _globals['_CREDITCARD']._serialized_start=110
+  _globals['_CREDITCARD']._serialized_end=175
+  _globals['_TRANSACTION']._serialized_start=177
+  _globals['_TRANSACTION']._serialized_end=299
+  _globals['_FRAUDDETECTIONDATA']._serialized_start=301
+  _globals['_FRAUDDETECTIONDATA']._serialized_end=382
+  _globals['_VECTORCLOCKSTATUS']._serialized_start=384
+  _globals['_VECTORCLOCKSTATUS']._serialized_end=442
+  _globals['_DELETIONRESPONSE']._serialized_start=444
+  _globals['_DELETIONRESPONSE']._serialized_end=501
+  _globals['_FRAUDDETECTIONSERVICE']._serialized_start=504
+  _globals['_FRAUDDETECTIONSERVICE']._serialized_end=786
 # @@protoc_insertion_point(module_scope)

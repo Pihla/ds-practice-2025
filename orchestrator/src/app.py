@@ -82,7 +82,7 @@ def send_new_order_to_transaction_verification_service(order_id, data):
             termsAccepted=data["termsAccepted"]
         )
         stub.InitTransactionVerification(transaction_verification.TransactionVerificationData(orderId=order_id, data=transaction_request_data))
-        stub.VerifyTransaction(transaction_verification.TransactionVerificationRequest(orderId=order_id, vector_clock=[0, 0, 0]))
+        stub.UpdateVectorClock(transaction_verification.VectorClockStatus(orderId=order_id, vector_clock=[0, 0, 0]))
 
 # Sends new order to fraud detection service using gRPC
 def send_new_order_to_fraud_detection_service(order_id, data):
@@ -107,7 +107,7 @@ def send_new_order_to_fraud_detection_service(order_id, data):
             termsAccepted=data["termsAccepted"]
         )
         stub.InitFraudDetection(fraud_detection.FraudDetectionData(orderId=order_id, data=fraud_detection_request_data))
-        stub.FraudDetection(fraud_detection.FraudDetectionRequest(orderId=order_id, vector_clock=[0, 0, 0]))
+        stub.UpdateVectorClock(fraud_detection.VectorClockStatus(orderId=order_id, vector_clock=[0, 0, 0]))
 
 # Sends new order to suggestions service using gRPC
 def send_new_order_to_suggestions_service(order_id, data):
@@ -122,7 +122,29 @@ def send_new_order_to_suggestions_service(order_id, data):
             ordered_books.append(suggestions.Book(bookId="000", title=item["name"], author=item["author"]))
 
         stub.InitSuggestions(suggestions.SuggestionsData(orderId=order_id, data=ordered_books))
-        stub.Suggest(suggestions.SuggestionsRequest(orderId=order_id, vector_clock=[0, 0, 0]))
+        stub.UpdateVectorClock(suggestions.VectorClockStatus(orderId=order_id, vector_clock=[0, 0, 0]))
+
+# Deletes order from suggestions service
+def delete_order_from_suggestions_service(order_id, vector_clock):
+    print("Deleting order from suggestions service")
+    with grpc.insecure_channel('suggestions:50053') as channel:
+        stub = suggestions_grpc.SuggestionsServiceStub(channel)
+        return stub.DeleteCompletedOrder(suggestions.VectorClockStatus(orderId=order_id, vector_clock=vector_clock))
+
+# Deletes order from fraud detection service
+def delete_order_from_fraud_detection_service(order_id, vector_clock):
+    print("Deleting order from fraud detection service")
+    with grpc.insecure_channel('fraud_detection:50051') as channel:
+        stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
+        return stub.DeleteCompletedOrder(fraud_detection.VectorClockStatus(orderId=order_id, vector_clock=vector_clock))
+
+# Deletes order from transaction verification service
+def delete_order_from_transaction_verification_service(order_id, vector_clock):
+    print("Deleting order from transaction verification service")
+    with grpc.insecure_channel('transaction_verification:50052') as channel:
+        stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
+        return stub.DeleteCompletedOrder(transaction_verification.VectorClockStatus(orderId=order_id, vector_clock=vector_clock))
+
 
 # Enqueues order
 def enqueue_order(order_id, data):
@@ -221,6 +243,18 @@ def checkout():
             'status': f"Order not approved. {failure_message}",
             'suggestedBooks': []
         }
+
+    # Check if vector clocks are valid in each service and delete order from each service
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        final_vector_clock = [3,2,1]
+        futures = [executor.submit(f, order_id, final_vector_clock) for f in
+                   [delete_order_from_transaction_verification_service, delete_order_from_fraud_detection_service, delete_order_from_suggestions_service]]
+
+        all_vector_clocks_ok = all(future.result().everythingOK for future in futures)
+        if all_vector_clocks_ok:
+            print(f"All vector clocks ok for order {order_id}")
+        else:
+            print(f"ERROR: mistake with vector clocks for order {order_id}")
 
     # Delete current order from dictionary of active orders
     del active_orders[order_id]

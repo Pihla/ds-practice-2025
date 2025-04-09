@@ -20,10 +20,15 @@ class TransactionVerificationServiceStub(object):
                 request_serializer=transaction__verification__pb2.TransactionVerificationData.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
-        self.VerifyTransaction = channel.unary_unary(
-                '/transaction_verification.TransactionVerificationService/VerifyTransaction',
-                request_serializer=transaction__verification__pb2.TransactionVerificationRequest.SerializeToString,
-                response_deserializer=transaction__verification__pb2.TransactionVerificationResponse.FromString,
+        self.UpdateVectorClock = channel.unary_unary(
+                '/transaction_verification.TransactionVerificationService/UpdateVectorClock',
+                request_serializer=transaction__verification__pb2.VectorClockStatus.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
+        self.DeleteCompletedOrder = channel.unary_unary(
+                '/transaction_verification.TransactionVerificationService/DeleteCompletedOrder',
+                request_serializer=transaction__verification__pb2.VectorClockStatus.SerializeToString,
+                response_deserializer=transaction__verification__pb2.DeletionResponse.FromString,
                 )
 
 
@@ -36,7 +41,13 @@ class TransactionVerificationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def VerifyTransaction(self, request, context):
+    def UpdateVectorClock(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteCompletedOrder(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -50,10 +61,15 @@ def add_TransactionVerificationServiceServicer_to_server(servicer, server):
                     request_deserializer=transaction__verification__pb2.TransactionVerificationData.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
-            'VerifyTransaction': grpc.unary_unary_rpc_method_handler(
-                    servicer.VerifyTransaction,
-                    request_deserializer=transaction__verification__pb2.TransactionVerificationRequest.FromString,
-                    response_serializer=transaction__verification__pb2.TransactionVerificationResponse.SerializeToString,
+            'UpdateVectorClock': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateVectorClock,
+                    request_deserializer=transaction__verification__pb2.VectorClockStatus.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'DeleteCompletedOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteCompletedOrder,
+                    request_deserializer=transaction__verification__pb2.VectorClockStatus.FromString,
+                    response_serializer=transaction__verification__pb2.DeletionResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -83,7 +99,7 @@ class TransactionVerificationService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def VerifyTransaction(request,
+    def UpdateVectorClock(request,
             target,
             options=(),
             channel_credentials=None,
@@ -93,8 +109,25 @@ class TransactionVerificationService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/transaction_verification.TransactionVerificationService/VerifyTransaction',
-            transaction__verification__pb2.TransactionVerificationRequest.SerializeToString,
-            transaction__verification__pb2.TransactionVerificationResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/transaction_verification.TransactionVerificationService/UpdateVectorClock',
+            transaction__verification__pb2.VectorClockStatus.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DeleteCompletedOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/transaction_verification.TransactionVerificationService/DeleteCompletedOrder',
+            transaction__verification__pb2.VectorClockStatus.SerializeToString,
+            transaction__verification__pb2.DeletionResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

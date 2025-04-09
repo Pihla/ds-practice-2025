@@ -112,11 +112,22 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
         self.init_order(request.orderId, request.data)
         return Empty()
 
-    # Create an RPC function to detect fraud
-    def FraudDetection(self, request, context):
+    # gRPC function to handle incoming vector clock
+    def UpdateVectorClock(self, request, context):
         self.handle_incoming_vector_clock(request.orderId, request.vector_clock)
-        response = fraud_detection.FraudDetectionResponse(vector_clock=[0, 0, 0])
-        return response
+        return Empty()
+
+    # gRPC function to check vector clock and if everything ok then delete order
+    def DeleteCompletedOrder(self, request, context):
+        local_vector_clock = self.orders[request.orderId]["vector_clock"]
+        incoming_vector_clock = request.vector_clock
+        if self.vector_clock_is_at_least(incoming_vector_clock, local_vector_clock):
+            self.orders.pop(request.orderId)
+            return fraud_detection.DeletionResponse(everythingOK = True, message = "")
+        else:
+            print(f"ERROR: Cannot delete order because incoming vector clock {incoming_vector_clock} is not bigger than local vector clock {local_vector_clock}")
+            return fraud_detection.DeletionResponse(everythingOK = False, message = f"Cannot delete order because vector clock is not correct.")
+
 
 def serve():
     # Create a gRPC server

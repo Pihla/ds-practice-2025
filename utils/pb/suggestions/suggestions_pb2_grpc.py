@@ -20,10 +20,15 @@ class SuggestionsServiceStub(object):
                 request_serializer=suggestions__pb2.SuggestionsData.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
-        self.Suggest = channel.unary_unary(
-                '/suggestions.SuggestionsService/Suggest',
-                request_serializer=suggestions__pb2.SuggestionsRequest.SerializeToString,
-                response_deserializer=suggestions__pb2.SuggestionsResponse.FromString,
+        self.UpdateVectorClock = channel.unary_unary(
+                '/suggestions.SuggestionsService/UpdateVectorClock',
+                request_serializer=suggestions__pb2.VectorClockStatus.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
+        self.DeleteCompletedOrder = channel.unary_unary(
+                '/suggestions.SuggestionsService/DeleteCompletedOrder',
+                request_serializer=suggestions__pb2.VectorClockStatus.SerializeToString,
+                response_deserializer=suggestions__pb2.DeletionResponse.FromString,
                 )
 
 
@@ -36,7 +41,13 @@ class SuggestionsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Suggest(self, request, context):
+    def UpdateVectorClock(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteCompletedOrder(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -50,10 +61,15 @@ def add_SuggestionsServiceServicer_to_server(servicer, server):
                     request_deserializer=suggestions__pb2.SuggestionsData.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
-            'Suggest': grpc.unary_unary_rpc_method_handler(
-                    servicer.Suggest,
-                    request_deserializer=suggestions__pb2.SuggestionsRequest.FromString,
-                    response_serializer=suggestions__pb2.SuggestionsResponse.SerializeToString,
+            'UpdateVectorClock': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateVectorClock,
+                    request_deserializer=suggestions__pb2.VectorClockStatus.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'DeleteCompletedOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteCompletedOrder,
+                    request_deserializer=suggestions__pb2.VectorClockStatus.FromString,
+                    response_serializer=suggestions__pb2.DeletionResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -83,7 +99,7 @@ class SuggestionsService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def Suggest(request,
+    def UpdateVectorClock(request,
             target,
             options=(),
             channel_credentials=None,
@@ -93,8 +109,25 @@ class SuggestionsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/suggestions.SuggestionsService/Suggest',
-            suggestions__pb2.SuggestionsRequest.SerializeToString,
-            suggestions__pb2.SuggestionsResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/suggestions.SuggestionsService/UpdateVectorClock',
+            suggestions__pb2.VectorClockStatus.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DeleteCompletedOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/suggestions.SuggestionsService/DeleteCompletedOrder',
+            suggestions__pb2.VectorClockStatus.SerializeToString,
+            suggestions__pb2.DeletionResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

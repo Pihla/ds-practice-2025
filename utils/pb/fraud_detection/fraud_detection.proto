@@ -5,7 +5,8 @@ package fraud_detection;
 
 service FraudDetectionService {
     rpc InitFraudDetection(FraudDetectionData) returns (google.protobuf.Empty);
-    rpc FraudDetection(FraudDetectionRequest) returns (FraudDetectionResponse);
+    rpc UpdateVectorClock(VectorClockStatus) returns (google.protobuf.Empty);
+    rpc DeleteCompletedOrder (VectorClockStatus) returns (DeletionResponse);
 }
 
 message User {
@@ -30,13 +31,12 @@ message FraudDetectionData {
     Transaction data = 2;
 }
 
-message FraudDetectionRequest {
+message VectorClockStatus {
     string orderId = 1;
     repeated int32 vector_clock = 2;
 }
 
-message FraudDetectionResponse {
-    bool is_valid = 1;
-    repeated int32 vector_clock = 2;
-    string message = 3;
+message DeletionResponse {
+    bool everythingOK = 1;
+    string message = 2;
 }

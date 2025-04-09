@@ -33,13 +33,6 @@ import orchestrator_pb2 as orchestrator
 import orchestrator_pb2_grpc as orchestrator_grpc
 
 
-# Checks if value of vc1 is at least the same as value of vc2
-def vector_clock_is_at_least(vc1, vc2):
-    for i in range(len(vc1)):
-        if vc1[i] < vc2[i]:
-            return False
-    return True
-
 class BaseService:
     def __init__(self, service_name, svc_indx, total_svcs=3):
         self.service_name = service_name
@@ -75,22 +68,22 @@ class BaseService:
             if self.svc_indx != 1:
                 with grpc.insecure_channel('fraud_detection:50051') as channel:
                     stub = fraud_detection_grpc.FraudDetectionServiceStub(channel)
-                    stub.FraudDetection(
-                        fraud_detection.FraudDetectionRequest(orderId=order_id, vector_clock=vector_clock))
+                    stub.UpdateVectorClock(
+                        fraud_detection.VectorClockStatus(orderId=order_id, vector_clock=vector_clock))
 
         def send_vc_to_suggestions_service():
             if self.svc_indx != 2:
                 with grpc.insecure_channel('suggestions:50053') as channel:
                     stub = suggestions_grpc.SuggestionsServiceStub(channel)
-                    stub.Suggest(
-                        suggestions.SuggestionsRequest(orderId=order_id, vector_clock=vector_clock))
+                    stub.UpdateVectorClock(
+                        suggestions.VectorClockStatus(orderId=order_id, vector_clock=vector_clock))
 
         def send_vc_to_transaction_verification():
             if self.svc_indx != 0:
                 with grpc.insecure_channel('transaction_verification:50052') as channel:
                     stub = transaction_verification_grpc.TransactionVerificationServiceStub(channel)
-                    stub.VerifyTransaction(
-                        transaction_verification.TransactionVerificationRequest(orderId=order_id, vector_clock=vector_clock))
+                    stub.UpdateVectorClock(
+                        transaction_verification.VectorClockStatus(orderId=order_id, vector_clock=vector_clock))
 
         threadpool_executor = ThreadPoolExecutor(max_workers=3)
 
@@ -101,13 +94,21 @@ class BaseService:
         ]:
             threadpool_executor.submit(f)
 
+    # Checks if value of vc1 is at least the same as value of vc2
+    def vector_clock_is_at_least(self, vc1, vc2):
+        print("comparing", vc1, vc2)
+        for i in range(len(vc1)):
+            if vc1[i] < vc2[i]:
+                return False
+        return True
+
     # Looks at vector clock for order with given id and decides if any of the methods should be executed in this service.
     # Executes all necessary methods and sends updated vector clock to other services
     def do_actions_based_on_vector_clock(self, order_id, depth=0):
         vector_clock = self.orders[order_id]["vector_clock"]
         print(f"Searching for the next action based on vector clock {vector_clock} for order {order_id}.")
         for possible_method in self.when_to_execute_methods:
-            if vector_clock_is_at_least(vector_clock, possible_method["min_vc_for_exec"]): # if all preconditions are fulfilled
+            if self.vector_clock_is_at_least(vector_clock, possible_method["min_vc_for_exec"]): # if all preconditions are fulfilled
                 if possible_method["min_vc_for_exec"][self.svc_indx] == vector_clock[self.svc_indx]: # if function hasn't already been executed
                     self.increment_vector_clock(order_id)
                     possible_method["method"](order_id)

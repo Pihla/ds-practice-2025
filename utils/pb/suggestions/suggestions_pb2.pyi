@@ -24,7 +24,7 @@ class SuggestionsData(_message.Message):
     data: _containers.RepeatedCompositeFieldContainer[Book]
     def __init__(self, orderId: _Optional[str] = ..., data: _Optional[_Iterable[_Union[Book, _Mapping]]] = ...) -> None: ...
 
-class SuggestionsRequest(_message.Message):
+class VectorClockStatus(_message.Message):
     __slots__ = ("orderId", "vector_clock")
     ORDERID_FIELD_NUMBER: _ClassVar[int]
     VECTOR_CLOCK_FIELD_NUMBER: _ClassVar[int]
@@ -32,10 +32,10 @@ class SuggestionsRequest(_message.Message):
     vector_clock: _containers.RepeatedScalarFieldContainer[int]
     def __init__(self, orderId: _Optional[str] = ..., vector_clock: _Optional[_Iterable[int]] = ...) -> None: ...
 
-class SuggestionsResponse(_message.Message):
-    __slots__ = ("vector_clock", "suggestedBooks")
-    VECTOR_CLOCK_FIELD_NUMBER: _ClassVar[int]
-    SUGGESTEDBOOKS_FIELD_NUMBER: _ClassVar[int]
-    vector_clock: _containers.RepeatedScalarFieldContainer[int]
-    suggestedBooks: _containers.RepeatedCompositeFieldContainer[Book]
-    def __init__(self, vector_clock: _Optional[_Iterable[int]] = ..., suggestedBooks: _Optional[_Iterable[_Union[Book, _Mapping]]] = ...) -> None: ...
+class DeletionResponse(_message.Message):
+    __slots__ = ("everythingOK", "message")
+    EVERYTHINGOK_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    everythingOK: bool
+    message: str
+    def __init__(self, everythingOK: bool = ..., message: _Optional[str] = ...) -> None: ...

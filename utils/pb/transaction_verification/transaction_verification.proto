@@ -5,7 +5,8 @@ package transaction_verification;
 
 service TransactionVerificationService {
     rpc InitTransactionVerification(TransactionVerificationData) returns (google.protobuf.Empty);
-    rpc VerifyTransaction (TransactionVerificationRequest) returns (TransactionVerificationResponse);
+    rpc UpdateVectorClock (VectorClockStatus) returns (google.protobuf.Empty);
+    rpc DeleteCompletedOrder (VectorClockStatus) returns (DeletionResponse);
 }
 
 message User {
@@ -30,13 +31,12 @@ message TransactionVerificationData {
     Transaction data = 2;
 }
 
-message TransactionVerificationRequest {
+message VectorClockStatus {
     string orderId = 1;
     repeated int32 vector_clock = 2;
 }
 
-message TransactionVerificationResponse {
-    bool is_valid = 1;
-    repeated int32 vector_clock = 2;
-    string message = 3;
+message DeletionResponse {
+    bool everythingOK = 1;
+    string message = 2;
 }

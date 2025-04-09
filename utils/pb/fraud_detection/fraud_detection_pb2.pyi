@@ -6,14 +6,6 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class OrderData(_message.Message):
-    __slots__ = ("amount", "full_request_data")
-    AMOUNT_FIELD_NUMBER: _ClassVar[int]
-    FULL_REQUEST_DATA_FIELD_NUMBER: _ClassVar[int]
-    amount: int
-    full_request_data: str
-    def __init__(self, amount: _Optional[int] = ..., full_request_data: _Optional[str] = ...) -> None: ...
-
 class User(_message.Message):
     __slots__ = ("name", "contact")
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -50,7 +42,7 @@ class FraudDetectionData(_message.Message):
     data: Transaction
     def __init__(self, orderId: _Optional[str] = ..., data: _Optional[_Union[Transaction, _Mapping]] = ...) -> None: ...
 
-class FraudDetectionRequest(_message.Message):
+class VectorClockStatus(_message.Message):
     __slots__ = ("orderId", "vector_clock")
     ORDERID_FIELD_NUMBER: _ClassVar[int]
     VECTOR_CLOCK_FIELD_NUMBER: _ClassVar[int]
@@ -58,12 +50,10 @@ class FraudDetectionRequest(_message.Message):
     vector_clock: _containers.RepeatedScalarFieldContainer[int]
     def __init__(self, orderId: _Optional[str] = ..., vector_clock: _Optional[_Iterable[int]] = ...) -> None: ...
 
-class FraudDetectionResponse(_message.Message):
-    __slots__ = ("is_valid", "vector_clock", "message")
-    IS_VALID_FIELD_NUMBER: _ClassVar[int]
-    VECTOR_CLOCK_FIELD_NUMBER: _ClassVar[int]
+class DeletionResponse(_message.Message):
+    __slots__ = ("everythingOK", "message")
+    EVERYTHINGOK_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
-    is_valid: bool
-    vector_clock: _containers.RepeatedScalarFieldContainer[int]
+    everythingOK: bool
     message: str
-    def __init__(self, is_valid: bool = ..., vector_clock: _Optional[_Iterable[int]] = ..., message: _Optional[str] = ...) -> None: ...
+    def __init__(self, everythingOK: bool = ..., message: _Optional[str] = ...) -> None: ...

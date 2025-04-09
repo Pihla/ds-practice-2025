@@ -42,7 +42,7 @@ class TransactionVerificationData(_message.Message):
     data: Transaction
     def __init__(self, orderId: _Optional[str] = ..., data: _Optional[_Union[Transaction, _Mapping]] = ...) -> None: ...
 
-class TransactionVerificationRequest(_message.Message):
+class VectorClockStatus(_message.Message):
     __slots__ = ("orderId", "vector_clock")
     ORDERID_FIELD_NUMBER: _ClassVar[int]
     VECTOR_CLOCK_FIELD_NUMBER: _ClassVar[int]
@@ -50,12 +50,10 @@ class TransactionVerificationRequest(_message.Message):
     vector_clock: _containers.RepeatedScalarFieldContainer[int]
     def __init__(self, orderId: _Optional[str] = ..., vector_clock: _Optional[_Iterable[int]] = ...) -> None: ...
 
-class TransactionVerificationResponse(_message.Message):
-    __slots__ = ("is_valid", "vector_clock", "message")
-    IS_VALID_FIELD_NUMBER: _ClassVar[int]
-    VECTOR_CLOCK_FIELD_NUMBER: _ClassVar[int]
+class DeletionResponse(_message.Message):
+    __slots__ = ("everythingOK", "message")
+    EVERYTHINGOK_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
-    is_valid: bool
-    vector_clock: _containers.RepeatedScalarFieldContainer[int]
+    everythingOK: bool
     message: str
-    def __init__(self, is_valid: bool = ..., vector_clock: _Optional[_Iterable[int]] = ..., message: _Optional[str] = ...) -> None: ...
+    def __init__(self, everythingOK: bool = ..., message: _Optional[str] = ...) -> None: ...

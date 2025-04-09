@@ -70,9 +70,21 @@ class TransactionVerificationService(transaction_verification_grpc.TransactionVe
         self.init_order(request.orderId, request.data)
         return Empty()
 
-    def VerifyTransaction(self, request, context):
+    # gRPC function to handle incoming vector clock
+    def UpdateVectorClock(self, request, context):
         self.handle_incoming_vector_clock(request.orderId, request.vector_clock)
-        return transaction_verification.TransactionVerificationResponse(is_valid=True, vector_clock=[0,0,0], message="User info and credit card info OK.")
+        return Empty()
+
+    # gRPC function to check vector clock and if everything ok then delete order
+    def DeleteCompletedOrder(self, request, context):
+        local_vector_clock = self.orders[request.orderId]["vector_clock"]
+        incoming_vector_clock = request.vector_clock
+        if self.vector_clock_is_at_least(incoming_vector_clock, local_vector_clock):
+            self.orders.pop(request.orderId)
+            return transaction_verification.DeletionResponse(everythingOK = True, message = "")
+        else:
+            print(f"ERROR: Cannot delete order because incoming vector clock {incoming_vector_clock} is not bigger than local vector clock {local_vector_clock}")
+            return transaction_verification.DeletionResponse(everythingOK = False, message = f"Cannot delete order because vector clock is not correct.")
 
 def serve():
     # Create a gRPC server

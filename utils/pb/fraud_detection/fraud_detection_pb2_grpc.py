@@ -20,10 +20,15 @@ class FraudDetectionServiceStub(object):
                 request_serializer=fraud__detection__pb2.FraudDetectionData.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
-        self.FraudDetection = channel.unary_unary(
-                '/fraud_detection.FraudDetectionService/FraudDetection',
-                request_serializer=fraud__detection__pb2.FraudDetectionRequest.SerializeToString,
-                response_deserializer=fraud__detection__pb2.FraudDetectionResponse.FromString,
+        self.UpdateVectorClock = channel.unary_unary(
+                '/fraud_detection.FraudDetectionService/UpdateVectorClock',
+                request_serializer=fraud__detection__pb2.VectorClockStatus.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
+        self.DeleteCompletedOrder = channel.unary_unary(
+                '/fraud_detection.FraudDetectionService/DeleteCompletedOrder',
+                request_serializer=fraud__detection__pb2.VectorClockStatus.SerializeToString,
+                response_deserializer=fraud__detection__pb2.DeletionResponse.FromString,
                 )
 
 
@@ -36,7 +41,13 @@ class FraudDetectionServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def FraudDetection(self, request, context):
+    def UpdateVectorClock(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteCompletedOrder(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -50,10 +61,15 @@ def add_FraudDetectionServiceServicer_to_server(servicer, server):
                     request_deserializer=fraud__detection__pb2.FraudDetectionData.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
-            'FraudDetection': grpc.unary_unary_rpc_method_handler(
-                    servicer.FraudDetection,
-                    request_deserializer=fraud__detection__pb2.FraudDetectionRequest.FromString,
-                    response_serializer=fraud__detection__pb2.FraudDetectionResponse.SerializeToString,
+            'UpdateVectorClock': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateVectorClock,
+                    request_deserializer=fraud__detection__pb2.VectorClockStatus.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'DeleteCompletedOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteCompletedOrder,
+                    request_deserializer=fraud__detection__pb2.VectorClockStatus.FromString,
+                    response_serializer=fraud__detection__pb2.DeletionResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -83,7 +99,7 @@ class FraudDetectionService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def FraudDetection(request,
+    def UpdateVectorClock(request,
             target,
             options=(),
             channel_credentials=None,
@@ -93,8 +109,25 @@ class FraudDetectionService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/fraud_detection.FraudDetectionService/FraudDetection',
-            fraud__detection__pb2.FraudDetectionRequest.SerializeToString,
-            fraud__detection__pb2.FraudDetectionResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/fraud_detection.FraudDetectionService/UpdateVectorClock',
+            fraud__detection__pb2.VectorClockStatus.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DeleteCompletedOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/fraud_detection.FraudDetectionService/DeleteCompletedOrder',
+            fraud__detection__pb2.VectorClockStatus.SerializeToString,
+            fraud__detection__pb2.DeletionResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
