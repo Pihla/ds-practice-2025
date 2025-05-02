@@ -195,15 +195,45 @@ services:
     volumes:
       - ./utils:/app/utils
       - ./order_executor/src:/app/order_executor/src
-  books_database:
+  books_database1:
     build:
       context: ./
       dockerfile: ./books_database/Dockerfile
     ports:
       - 50059:50059
-    env_file:
-      - .env
+    container_name: books_database1
     environment:
+      - DATABASE_ID=1
+      - PYTHONUNBUFFERED=TRUE
+      - PYTHONFILE=/app/books_database/src/app.py
+      - PYTHONPATH=/app
+    volumes:
+      - ./utils:/app/utils
+      - ./books_database/src:/app/books_database/src
+  books_database2:
+    build:
+      context: ./
+      dockerfile: ./books_database/Dockerfile
+    ports:
+      - 50060:50060
+    container_name: books_database2
+    environment:
+      - DATABASE_ID=2
+      - PYTHONUNBUFFERED=TRUE
+      - PYTHONFILE=/app/books_database/src/app.py
+      - PYTHONPATH=/app
+    volumes:
+      - ./utils:/app/utils
+      - ./books_database/src:/app/books_database/src
+  books_database3:
+    build:
+      context: ./
+      dockerfile: ./books_database/Dockerfile
+    ports:
+      - 50061:50061
+    container_name: books_database3
+    environment:
+      - DATABASE_ID=3
       - PYTHONUNBUFFERED=TRUE
       - PYTHONFILE=/app/books_database/src/app.py
       - PYTHONPATH=/app
