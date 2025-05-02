@@ -195,3 +195,18 @@ services:
     volumes:
       - ./utils:/app/utils
       - ./order_executor/src:/app/order_executor/src
+  books_database:
+    build:
+      context: ./
+      dockerfile: ./books_database/Dockerfile
+    ports:
+      - 50059:50059
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=TRUE
+      - PYTHONFILE=/app/books_database/src/app.py
+      - PYTHONPATH=/app
+    volumes:
+      - ./utils:/app/utils
+      - ./books_database/src:/app/books_database/src
