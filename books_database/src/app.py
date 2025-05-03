@@ -13,32 +13,57 @@ import books_database_pb2_grpc as books_database_grpc
 import grpc
 from concurrent import futures
 
-
-# Create a class to define the server functions, derived from
-# books_database_pb2_grpc.BooksDatabaseServiceServicer
 class BooksDatabaseService(books_database_grpc.BooksDatabaseServiceServicer):
     def __init__(self):
-        self.id = int(os.getenv("DATABASE_ID"))
-        self.port = 50058 + self.id
+        self.store = {}
 
-        self.all_addresses = {
-            1: "books_database1:50059",
-            2: "books_database2:50060",
-            3: "books_database3:50061",
-        }
-        self.all_addresses.pop(self.id)
+    def Read(self, request, context):
+        stock = self.store.get(request.title, 0)
+        return books_database.ReadResponse(stock=stock)
+
+    def Write(self, request, context):
+        self.store[request.title] = request.new_stock
+        return books_database.WriteResponse(is_success=True)
+
+# Class for the primary replica that will handle Writes to backups
+class PrimaryReplica(BooksDatabaseService):
+    def __init__(self, backup_stubs):
+        super().__init__()
+        self.backup_stubs = backup_stubs
+
+    def Write(self, request, context):
+        # Write locally
+        self.store[request.title] = request.new_stock
+        # Write sequentially to all backups
+        for backup_stub in self.backup_stubs:
+            try:
+                backup_stub.Write(request)
+            except Exception as e:
+                print(f"Failed to replicate to backup stub: {e}")
+        return books_database.WriteResponse(is_success=True)
 
 def serve():
+    service_id = int(os.getenv("DATABASE_ID"))
+    port = 50058 + service_id
+    all_addresses = {
+        1: "books_database1:50059",
+        2: "books_database2:50060",
+        3: "books_database3:50061",
+    }
+    all_addresses.pop(service_id)
+
+    # Set primary replica
+    if service_id == 1:
+        backup_stubs = all_addresses.values()
+        service = PrimaryReplica(backup_stubs)
+    else:
+        service = BooksDatabaseService()
+
     # Create a gRPC server
     server = grpc.server(futures.ThreadPoolExecutor())
-
     # Add BooksDatabaseService
-    books_database_grpc.add_BooksDatabaseServiceServicer_to_server(BooksDatabaseService(), server)
-
-    # Listen on port 50059
-    port = 50058 + int(os.getenv("DATABASE_ID", "1"))
+    books_database_grpc.add_BooksDatabaseServiceServicer_to_server(service, server)
     server.add_insecure_port(f"[::]:{port}")
-
     # Start the server
     server.start()
     print(f"Database {os.getenv('DATABASE_ID')} Server started. Listening on port {port}.")
