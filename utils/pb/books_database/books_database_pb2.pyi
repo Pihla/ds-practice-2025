@@ -39,9 +39,11 @@ class DecrementStockRequest(_message.Message):
     def __init__(self, title: _Optional[str] = ..., amount: _Optional[int] = ...) -> None: ...
 
 class DecrementStockResponse(_message.Message):
-    __slots__ = ("is_success", "updated_stock")
+    __slots__ = ("is_success", "updated_stock", "message")
     IS_SUCCESS_FIELD_NUMBER: _ClassVar[int]
     UPDATED_STOCK_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
     is_success: bool
     updated_stock: int
-    def __init__(self, is_success: bool = ..., updated_stock: _Optional[int] = ...) -> None: ...
+    message: str
+    def __init__(self, is_success: bool = ..., updated_stock: _Optional[int] = ..., message: _Optional[str] = ...) -> None: ...

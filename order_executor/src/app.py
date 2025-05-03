@@ -3,6 +3,7 @@ import sys
 import os
 import threading
 import time
+import ast
 
 # This set of lines are needed to import the gRPC stubs.
 # The path of the stubs is relative to the current file, or absolute inside the container.
@@ -19,6 +20,12 @@ orderqueue_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/ord
 sys.path.insert(0, orderqueue_grpc_path)
 import orderqueue_pb2 as orderqueue
 import orderqueue_pb2_grpc as orderqueue_grpc
+
+# Set up books_database
+books_database_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/books_database'))
+sys.path.insert(0, books_database_grpc_path)
+import books_database_pb2 as books_database
+import books_database_pb2_grpc as books_database_grpc
 
 import grpc
 from concurrent import futures
@@ -77,15 +84,44 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
 
     def execute_order(self):
         # Node tries to retrive the order from Order Queue
+        order_response = self.dequeue_order()
+        if order_response:
+            print(f"[{self.id}] Order is being executed, ID: {order_response.orderId}")
+            database_response = self.update_database(order_response)
+            if database_response:
+                print(f"[{self.id}] Order execution finished, ID: {order_response.orderId}")
+            else:
+                print(f"[{self.id}] Order execution failed, ID: {order_response.orderId}")
+
+    def dequeue_order(self):
         try:
             with grpc.insecure_channel('orderqueue:50054') as channel:
                 # Create a stub object
                 stub = orderqueue_grpc.OrderQueueServiceStub(channel)
                 response = stub.Dequeue(Empty())
                 if response.orderId:
-                    print(f"[{self.id}] Order is being executed, ID: {response.orderId}")
+                    return response
         except Exception as e:
             print(f"[{self.id}] Failed to dequeue: {e}")
+        return None
+
+    def update_database(self, order):
+        order_data = ast.literal_eval(order.full_request_data)
+        is_success = True
+
+        try:
+            with grpc.insecure_channel('books_database1: 50059') as channel:
+                stub = books_database_grpc.BooksDatabaseServiceStub(channel)
+                for book in order_data["items"]:
+                    decrement_stock_request = books_database.DecrementStockRequest(title=book["name"], amount=book["quantity"])
+                    response = stub.DecrementStock(decrement_stock_request)
+                    if not response.is_success:
+                        print(f"Failed to decrement stock, reason: {response.message}")
+                        is_success = False
+        except Exception as e:
+            print(f"[{self.id}] Failed to update database: {e}")
+            is_success = False
+        return is_success
 
     def monitor_leader(self):
         # Monitor whether the leader is alive

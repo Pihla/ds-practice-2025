@@ -15,13 +15,16 @@ from concurrent import futures
 
 class BooksDatabaseService(books_database_grpc.BooksDatabaseServiceServicer):
     def __init__(self):
-        self.store = {}
+        self.store = {
+            "The Lord of the Rings": 10,
+            "The Twilight" : 10,
+        }
 
-    def Read(self, request, context):
+    def Read(self, request, context=None):
         stock = self.store.get(request.title, 0)
         return books_database.ReadResponse(stock=stock)
 
-    def Write(self, request, context):
+    def Write(self, request, context=None):
         self.store[request.title] = request.new_stock
         return books_database.WriteResponse(is_success=True)
 
@@ -31,16 +34,36 @@ class PrimaryReplica(BooksDatabaseService):
         super().__init__()
         self.backup_stubs = backup_stubs
 
-    def Write(self, request, context):
+    def Write(self, request, context=None):
         # Write locally
         self.store[request.title] = request.new_stock
         # Write sequentially to all backups
         for backup_stub in self.backup_stubs:
             try:
-                backup_stub.Write(request)
+                with grpc.insecure_channel(backup_stub) as channel:
+                    stub = books_database_grpc.BooksDatabaseServiceStub(channel)
+                    response = stub.Write(request)
             except Exception as e:
                 print(f"Failed to replicate to backup stub: {e}")
         return books_database.WriteResponse(is_success=True)
+
+    def DecrementStock(self, request, context):
+        # Handle decrement logic
+        read_request = books_database.ReadRequest(title=request.title)
+        read_response = self.Read(read_request)
+
+        # Check if there is enough to buy
+        if read_response.stock < request.amount:
+            return books_database.DecrementStockResponse(is_success=False, updated_stock=-1, message="Not enough stock.")
+
+        new_stock = read_response.stock - request.amount
+        # Writes to local and to backups
+        write_request = books_database.WriteRequest(title=request.title, new_stock=new_stock)
+        write_response = self.Write(write_request)
+        # If write is done then it is success
+        if write_response.is_success:
+            return books_database.DecrementStockResponse(is_success=True, updated_stock=new_stock, message="Stock updated.")
+        return books_database.DecrementStockResponse(is_success=False, updated_stock=-1, message="Unexpected error in write.")
 
 def serve():
     service_id = int(os.getenv("DATABASE_ID"))

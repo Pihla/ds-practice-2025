@@ -33,4 +33,5 @@ message DecrementStockRequest {
 message DecrementStockResponse {
     bool is_success = 1;
     int32 updated_stock = 2;
+    string message = 3;
 }
