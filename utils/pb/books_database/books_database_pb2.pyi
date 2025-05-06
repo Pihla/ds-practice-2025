@@ -4,7 +4,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class PrepareRequest(_message.Message):
+class GenericBookRequest(_message.Message):
     __slots__ = ("order_id", "title", "amount")
     ORDER_ID_FIELD_NUMBER: _ClassVar[int]
     TITLE_FIELD_NUMBER: _ClassVar[int]
@@ -22,16 +22,6 @@ class PrepareResponse(_message.Message):
     message: str
     def __init__(self, ready: bool = ..., message: _Optional[str] = ...) -> None: ...
 
-class CommitRequest(_message.Message):
-    __slots__ = ("order_id", "title", "amount")
-    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
-    TITLE_FIELD_NUMBER: _ClassVar[int]
-    AMOUNT_FIELD_NUMBER: _ClassVar[int]
-    order_id: str
-    title: str
-    amount: int
-    def __init__(self, order_id: _Optional[str] = ..., title: _Optional[str] = ..., amount: _Optional[int] = ...) -> None: ...
-
 class CommitResponse(_message.Message):
     __slots__ = ("success", "message")
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
@@ -39,16 +29,6 @@ class CommitResponse(_message.Message):
     success: bool
     message: str
     def __init__(self, success: bool = ..., message: _Optional[str] = ...) -> None: ...
-
-class AbortRequest(_message.Message):
-    __slots__ = ("order_id", "title", "amount")
-    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
-    TITLE_FIELD_NUMBER: _ClassVar[int]
-    AMOUNT_FIELD_NUMBER: _ClassVar[int]
-    order_id: str
-    title: str
-    amount: int
-    def __init__(self, order_id: _Optional[str] = ..., title: _Optional[str] = ..., amount: _Optional[int] = ...) -> None: ...
 
 class AbortResponse(_message.Message):
     __slots__ = ("aborted", "message")

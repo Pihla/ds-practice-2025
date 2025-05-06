@@ -94,7 +94,7 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
         with grpc.insecure_channel('books_database1: 50059') as channel:
             stub = books_database_grpc.BooksDatabaseServiceStub(channel)
             for book in order_data["items"]:
-                prepare_request = books_database.PrepareRequest(order_id=order.orderId, title=book["name"],
+                prepare_request = books_database.GenericBookRequest(order_id=order.orderId, title=book["name"],
                                                                 amount=book["quantity"])
                 response = stub.Prepare(prepare_request)
                 if not response.ready:
@@ -114,15 +114,18 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
 
     # Aborts all prepared events for the order
     def abort_all(self, order, order_data):
+        all_succeed = True
+
         # Abort decrementing number of books in database
         with grpc.insecure_channel('books_database1: 50059') as channel:
             stub = books_database_grpc.BooksDatabaseServiceStub(channel)
             for book_line in order_data["items"]:
-                abort_request = books_database.AbortRequest(order_id=order.orderId, title=book_line["name"],
+                abort_request = books_database.GenericBookRequest(order_id=order.orderId, title=book_line["name"],
                                                             amount=book_line["quantity"])
                 response = stub.Abort(abort_request)
                 if not response.aborted:
                     print("Error aborting database: " + response.message)
+                    all_succeed = False
 
         # Abort payment
         with grpc.insecure_channel('payment: 50062') as channel:
@@ -131,18 +134,25 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
             response = stub.Abort(abort_request)
             if not response.aborted:
                 print("Error aborting payment: " + response.message)
+                all_succeed = False
+
+        return all_succeed
 
     # Commits all prepared events for the order
     def commit_all(self, order, order_data):
+        all_succeed = True
+
         # Commit decrementing number of books in database
         with grpc.insecure_channel('books_database1: 50059') as channel:
             stub = books_database_grpc.BooksDatabaseServiceStub(channel)
             for book in order_data["items"]:
-                commit_request = books_database.CommitRequest(order_id=order.orderId, title=book["name"],
+                commit_request = books_database.GenericBookRequest(order_id=order.orderId, title=book["name"],
                                                               amount=book["quantity"])
                 response = stub.Commit(commit_request)
                 if not response.success:
                     print(f"Failed to commit, reason: {response.message}")
+                    all_succeed = False
+
         with grpc.insecure_channel('payment: 50062') as channel:
             stub = payment_grpc.PaymentServiceStub(channel)
             commit_response = stub.Commit(payment.CommitRequest(order_id=order.orderId))
@@ -150,6 +160,9 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
                 print("Dummy payment was successful.")
             else:
                 print(f"Failed to commit, reason: {commit_response.message}")
+                all_succeed = False
+
+        return all_succeed
 
     def execute_order(self):
         # Node tries to retrieve the order from Order Queue
@@ -164,13 +177,13 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
 
             # Abort
             if not agreed_to_prepare:
-                self.abort_all(order, order_data)
-                print(f"Order {order.orderId} was aborted.")
+                all_succeed = self.abort_all(order, order_data)
+                print(f"Order {order.orderId} was aborted successfully: {all_succeed}.")
                 return
 
             # Commit
-            self.commit_all(order, order_data)
-            print(f"Order {order.orderId} was committed.")
+            all_succeed = self.commit_all(order, order_data)
+            print(f"Order {order.orderId} was committed successfully: {all_succeed}.")
 
     def dequeue_order(self):
         try:

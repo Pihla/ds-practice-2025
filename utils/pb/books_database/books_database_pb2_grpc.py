@@ -16,18 +16,28 @@ class BooksDatabaseServiceStub(object):
         """
         self.Prepare = channel.unary_unary(
                 '/books_database.BooksDatabaseService/Prepare',
-                request_serializer=books__database__pb2.PrepareRequest.SerializeToString,
+                request_serializer=books__database__pb2.GenericBookRequest.SerializeToString,
                 response_deserializer=books__database__pb2.PrepareResponse.FromString,
                 )
         self.Commit = channel.unary_unary(
                 '/books_database.BooksDatabaseService/Commit',
-                request_serializer=books__database__pb2.CommitRequest.SerializeToString,
+                request_serializer=books__database__pb2.GenericBookRequest.SerializeToString,
                 response_deserializer=books__database__pb2.CommitResponse.FromString,
                 )
         self.Abort = channel.unary_unary(
                 '/books_database.BooksDatabaseService/Abort',
-                request_serializer=books__database__pb2.AbortRequest.SerializeToString,
+                request_serializer=books__database__pb2.GenericBookRequest.SerializeToString,
                 response_deserializer=books__database__pb2.AbortResponse.FromString,
+                )
+        self.AddOrderLineToPrepared = channel.unary_unary(
+                '/books_database.BooksDatabaseService/AddOrderLineToPrepared',
+                request_serializer=books__database__pb2.GenericBookRequest.SerializeToString,
+                response_deserializer=books__database__pb2.WriteResponse.FromString,
+                )
+        self.RemoveOrderLineFromPrepared = channel.unary_unary(
+                '/books_database.BooksDatabaseService/RemoveOrderLineFromPrepared',
+                request_serializer=books__database__pb2.GenericBookRequest.SerializeToString,
+                response_deserializer=books__database__pb2.WriteResponse.FromString,
                 )
         self.Read = channel.unary_unary(
                 '/books_database.BooksDatabaseService/Read',
@@ -62,6 +72,18 @@ class BooksDatabaseServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def AddOrderLineToPrepared(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RemoveOrderLineFromPrepared(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Read(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -79,18 +101,28 @@ def add_BooksDatabaseServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Prepare': grpc.unary_unary_rpc_method_handler(
                     servicer.Prepare,
-                    request_deserializer=books__database__pb2.PrepareRequest.FromString,
+                    request_deserializer=books__database__pb2.GenericBookRequest.FromString,
                     response_serializer=books__database__pb2.PrepareResponse.SerializeToString,
             ),
             'Commit': grpc.unary_unary_rpc_method_handler(
                     servicer.Commit,
-                    request_deserializer=books__database__pb2.CommitRequest.FromString,
+                    request_deserializer=books__database__pb2.GenericBookRequest.FromString,
                     response_serializer=books__database__pb2.CommitResponse.SerializeToString,
             ),
             'Abort': grpc.unary_unary_rpc_method_handler(
                     servicer.Abort,
-                    request_deserializer=books__database__pb2.AbortRequest.FromString,
+                    request_deserializer=books__database__pb2.GenericBookRequest.FromString,
                     response_serializer=books__database__pb2.AbortResponse.SerializeToString,
+            ),
+            'AddOrderLineToPrepared': grpc.unary_unary_rpc_method_handler(
+                    servicer.AddOrderLineToPrepared,
+                    request_deserializer=books__database__pb2.GenericBookRequest.FromString,
+                    response_serializer=books__database__pb2.WriteResponse.SerializeToString,
+            ),
+            'RemoveOrderLineFromPrepared': grpc.unary_unary_rpc_method_handler(
+                    servicer.RemoveOrderLineFromPrepared,
+                    request_deserializer=books__database__pb2.GenericBookRequest.FromString,
+                    response_serializer=books__database__pb2.WriteResponse.SerializeToString,
             ),
             'Read': grpc.unary_unary_rpc_method_handler(
                     servicer.Read,
@@ -124,7 +156,7 @@ class BooksDatabaseService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/Prepare',
-            books__database__pb2.PrepareRequest.SerializeToString,
+            books__database__pb2.GenericBookRequest.SerializeToString,
             books__database__pb2.PrepareResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -141,7 +173,7 @@ class BooksDatabaseService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/Commit',
-            books__database__pb2.CommitRequest.SerializeToString,
+            books__database__pb2.GenericBookRequest.SerializeToString,
             books__database__pb2.CommitResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -158,8 +190,42 @@ class BooksDatabaseService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/Abort',
-            books__database__pb2.AbortRequest.SerializeToString,
+            books__database__pb2.GenericBookRequest.SerializeToString,
             books__database__pb2.AbortResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AddOrderLineToPrepared(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/AddOrderLineToPrepared',
+            books__database__pb2.GenericBookRequest.SerializeToString,
+            books__database__pb2.WriteResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RemoveOrderLineFromPrepared(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/RemoveOrderLineFromPrepared',
+            books__database__pb2.GenericBookRequest.SerializeToString,
+            books__database__pb2.WriteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

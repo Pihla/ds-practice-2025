@@ -3,16 +3,18 @@ syntax = "proto3";
 package books_database;
 
 service BooksDatabaseService {
-    rpc Prepare(PrepareRequest) returns (PrepareResponse);
-    rpc Commit(CommitRequest) returns (CommitResponse);
-    rpc Abort(AbortRequest) returns (AbortResponse);
+    rpc Prepare(GenericBookRequest) returns (PrepareResponse);
+    rpc Commit(GenericBookRequest) returns (CommitResponse);
+    rpc Abort(GenericBookRequest) returns (AbortResponse);
 
+    rpc AddOrderLineToPrepared(GenericBookRequest) returns (WriteResponse);
+    rpc RemoveOrderLineFromPrepared(GenericBookRequest) returns (WriteResponse);
 
     rpc Read(ReadRequest) returns (ReadResponse);
     rpc Write(WriteRequest) returns (WriteResponse);
 }
 
-message PrepareRequest {
+message GenericBookRequest {
     string order_id = 1;
     string title = 2;
     int32 amount = 3;
@@ -23,21 +25,9 @@ message PrepareResponse {
     string message = 2;
 }
 
-message CommitRequest {
-    string order_id = 1;
-    string title = 2;
-    int32 amount = 3;
-}
-
 message CommitResponse {
     bool success = 1;
     string message = 2;
-}
-
-message AbortRequest {
-    string order_id = 1;
-    string title = 2;
-    int32 amount = 3;
 }
 
 message AbortResponse {

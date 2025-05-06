@@ -30,13 +30,29 @@ class BooksDatabaseService(books_database_grpc.BooksDatabaseServiceServicer):
     # Reads value how many books are left when all prepared orders would be executed
     def ReadConsideringPreparedOrders(self, title, context=None):
         stock = self.store.get(title, 0)
-        orders_with_current_title = self.prepared_order_lines.setdefault(title, [])
-        for order_id, amount in orders_with_current_title:
+        if title not in self.prepared_order_lines:
+            return books_database.ReadResponse(stock=0)
+        for order_id, amount in self.prepared_order_lines[title]:
             stock -= amount
         return books_database.ReadResponse(stock=stock)
 
     def Write(self, request, context=None):
         self.store[request.title] = request.new_stock
+        return books_database.WriteResponse(is_success=True)
+
+    def AddOrderLineToPrepared(self, request, context=None):
+        if not request.title in self.prepared_order_lines:
+            self.prepared_order_lines[request.title] = set()
+        self.prepared_order_lines[request.title].add((request.order_id, request.amount))
+        print("Added order line to prepared")
+        return books_database.WriteResponse(is_success=True)
+
+    def RemoveOrderLineFromPrepared(self, request, context=None):
+        if request.title in self.prepared_order_lines:
+            self.prepared_order_lines[request.title].remove((request.order_id, request.amount))
+            print("Removed order line from prepared")
+        else:
+            print("Order line has already been removed or hasn't been initialized")
         return books_database.WriteResponse(is_success=True)
 
 # Class for the primary replica that will handle Writes to backups
@@ -48,6 +64,55 @@ class PrimaryReplica(BooksDatabaseService):
         # Retires for Write operation on backup stubs
         self.max_retries = 2
         self.retry_delay = 0.5
+
+    def AddOrderLineToPreparedAndSendToReplicas(self, request, context=None):
+        try:
+            # Write locally
+            self.AddOrderLineToPrepared(request, context)
+
+            succeeded_writes = 0
+            # Write sequentially to all backups
+            for backup_stub in self.backup_stubs:
+                for attempt_idx in range(self.max_retries):
+                    try:
+                        with grpc.insecure_channel(backup_stub) as channel:
+                            stub = books_database_grpc.BooksDatabaseServiceStub(channel)
+                            response = stub.AddOrderLineToPrepared(request)
+                            if response.is_success:
+                                succeeded_writes += 1
+                                break
+                    except Exception as e:
+                        print(f"Attempt {attempt_idx+1} failed to replicate to backup stub {backup_stub}, reason: {e}")
+                        time.sleep(self.retry_delay)
+            if succeeded_writes < len(self.backup_stubs):
+                print("Could not replicate to all backup stubs.")
+        except Exception as e:
+            print(f"Error with adding to prepared order lines: {e}")
+
+    def RemoveOrderLineFromPreparedAndSendToReplicas(self, request, context=None):
+        try:
+            # Write locally
+            self.RemoveOrderLineFromPrepared(request, context)
+
+            succeeded_writes = 0
+            # Write sequentially to all backups
+            for backup_stub in self.backup_stubs:
+                for attempt_idx in range(self.max_retries):
+                    try:
+                        with grpc.insecure_channel(backup_stub) as channel:
+                            stub = books_database_grpc.BooksDatabaseServiceStub(channel)
+                            response = stub.RemoveOrderLineFromPrepared(request)
+                            if response.is_success:
+                                succeeded_writes += 1
+                                break
+                    except Exception as e:
+                        print(f"Attempt {attempt_idx + 1} failed to replicate to backup stub {backup_stub}, reason: {e}")
+                        time.sleep(self.retry_delay)
+            if succeeded_writes < len(self.backup_stubs):
+                print("Could not replicate to all backup stubs.")
+        except Exception as e:
+            print(f"Error with removing from prepared order lines: {e}")
+
 
     def _get_lock(self, title):
         if title not in self.locks:
@@ -83,9 +148,7 @@ class PrimaryReplica(BooksDatabaseService):
             read_response = self.ReadConsideringPreparedOrders(request.title)
             stock = read_response.stock
             enough_books = stock >= request.amount
-            if not request.title in self.prepared_order_lines:
-                self.prepared_order_lines[request.title] = []
-            self.prepared_order_lines[request.title] += [(request.order_id, request.amount)]
+            self.AddOrderLineToPreparedAndSendToReplicas(request, context)
             if enough_books:
                 return books_database.PrepareResponse(ready=True, message="Database has enough books")
             else:
@@ -99,7 +162,7 @@ class PrimaryReplica(BooksDatabaseService):
     def Abort(self, request, context):
         try:
             print(f"Aborting removing {request.amount} copies of {request.title} for order {request.order_id}")
-            self.prepared_order_lines[request.title].remove((request.order_id, request.amount))
+            self.RemoveOrderLineFromPreparedAndSendToReplicas(request, context)
             return books_database.AbortResponse(aborted=True, message = "Database has aborted")
         except Exception as e:
             print(f"Abort failed with exception: {e}")
@@ -110,7 +173,7 @@ class PrimaryReplica(BooksDatabaseService):
         try:
             print(f"Committing order {request.order_id} by removing {request.amount} copies of {request.title}")
             success = self.DecrementStock(request.title, request.amount)
-            self.prepared_order_lines[request.title].remove((request.order_id, request.amount))
+            success = success and self.RemoveOrderLineFromPreparedAndSendToReplicas(request, context)
             if success:
                 return books_database.CommitResponse(success=True, message = "Order successfully committed")
             else:
@@ -134,7 +197,7 @@ class PrimaryReplica(BooksDatabaseService):
             # If write is done then it is success
             if write_response.is_success:
                 return True
-            print("Write failed.")
+            print("Write failed for some replicas.")
             return False
 
 def serve():
