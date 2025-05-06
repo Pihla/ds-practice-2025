@@ -48,7 +48,8 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer, BaseServic
                 ordered_books)
 
             # Send message to AI API
-            print(f"Sending message to suggestions AI API. Message: {message_to_ai}")
+            print(f"Sending message to suggestions AI API.")
+            #print(f"Sending message to suggestions AI API. Message: {message_to_ai}")
             client = genai.Client(api_key=key)
             ai_api_response = client.models.generate_content(
                 model="gemini-2.0-flash",
@@ -75,7 +76,8 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer, BaseServic
         with grpc.insecure_channel('orchestrator:5001') as channel:
             stub = orchestrator_grpc.OrchestratorServiceStub(channel)
             book_suggestions = orchestrator.BookSuggestions(orderId=order_id, suggestedBooks = suggested_books)
-            print(f"Sending Book Suggestions: {book_suggestions}")
+            print(f"Sending Book Suggestions")
+            # print(f"Sending Book Suggestions: {book_suggestions}")
             stub.AcceptBookSuggestions(book_suggestions)
 
     def InitSuggestions(self, request, context):

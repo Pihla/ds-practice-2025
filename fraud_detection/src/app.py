@@ -21,7 +21,8 @@ def send_message_to_ai(message_to_ai):
     key = os.environ.get("GENAI_API_KEY")
 
     # Send message to AI API
-    print(f"Sending message to AI API for fraud detection. Message: {message_to_ai}")
+    print(f"Sending message to AI API for fraud detection. ")
+    # print(f"Sending message to AI API for fraud detection. Message: {message_to_ai}")
     client = genai.Client(api_key=key)
     ai_api_response = client.models.generate_content(
         model="gemini-2.0-flash",
