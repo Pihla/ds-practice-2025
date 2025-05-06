@@ -27,6 +27,12 @@ sys.path.insert(0, books_database_grpc_path)
 import books_database_pb2 as books_database
 import books_database_pb2_grpc as books_database_grpc
 
+# Set up dummy payment
+payment_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/payment'))
+sys.path.insert(0, payment_grpc_path)
+import payment_pb2 as payment
+import payment_pb2_grpc as payment_grpc
+
 import grpc
 from concurrent import futures
 from google.protobuf.empty_pb2 import Empty
@@ -92,6 +98,20 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
                 print(f"[{self.id}] Order execution finished, ID: {order_response.orderId}")
             else:
                 print(f"[{self.id}] Order execution failed, ID: {order_response.orderId}")
+
+            # Execute dummy payment
+            print("Trying to perform dummy payment")
+            try:
+                with grpc.insecure_channel('payment:50062') as channel:
+                    stub = payment_grpc.PaymentServiceStub(channel)
+                    prepare_response = stub.Prepare(payment.PrepareRequest(order_id = order_response.orderId))
+                    if prepare_response.ready:
+                        commit_response = stub.Commit(payment.CommitRequest(order_id = order_response.orderId))
+                        if commit_response.success:
+                            print("Dummy payment was successful.")
+            except Exception as e:
+                print(f"Error: {e}")
+
 
     def dequeue_order(self):
         try:

@@ -240,3 +240,18 @@ services:
     volumes:
       - ./utils:/app/utils
       - ./books_database/src:/app/books_database/src
+  payment:
+    build:
+      context: ./
+      dockerfile: payment/Dockerfile
+    ports:
+      - 50062:50062
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=TRUE
+      - PYTHONFILE=/app/payment/src/app.py
+      - PYTHONPATH=/app
+    volumes:
+      - ./utils:/app/utils
+      - ./payment/src:/app/payment/src
