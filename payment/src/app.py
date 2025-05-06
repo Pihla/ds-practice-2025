@@ -17,27 +17,41 @@ class PaymentService(payment_grpc.PaymentServiceServicer):
         self.prepared = False
 
     def Prepare(self, request, context):
-        # In real service, funds would be checked here
-        transaction_is_possible = True if random.random() < 0.95 else False
-
-        self.prepared = transaction_is_possible
-        print(f"Answer to prepare request: {self.prepared} for order {request.order_id}")
-        return payment_pb2.PrepareResponse(ready=transaction_is_possible)
+        try:
+            print("Preparing for payment")
+            # In real service, funds would be checked here
+            transaction_is_possible = True if random.random() < 0.95 else False
+            self.prepared = transaction_is_possible
+            if transaction_is_possible:
+                return payment_pb2.PrepareResponse(ready=True, message = "Transaction prepared")
+            else:
+                return payment_pb2.PrepareResponse(ready=False, message = "Transaction failed to prepare, because luck was not in your favour :(")
+        except Exception as e:
+            print(f"Preparing failed with exception: {e}")
+            return payment_pb2.PrepareResponse(ready=False, message="Unexpected error while preparing for payment: " + str(e))
 
     def Commit(self, request, context):
-        if self.prepared:
-            print(f"Payment committed for order {request.order_id}")
-            # In real service, money would be subtracted here
-            self.prepared = False
-            return payment_pb2.CommitResponse(success=True)
-        else:
-            print(f"Payment not committed for order {request.order_id}")
-            return payment_pb2.CommitResponse(success=False)
+        try:
+            print("Committing payment")
+            if self.prepared:
+                # In real service, money would be subtracted here
+                self.prepared = False
+                return payment_pb2.CommitResponse(success=True)
+            else:
+                print(f"Payment not committed for order {request.order_id}")
+                return payment_pb2.CommitResponse(success=False)
+        except Exception as e:
+            print(f"Commit failed with exception: {e}")
+            return payment_pb2.CommitResponse(success=False, message="Unexpected error while committing payment: " + str(e))
 
     def Abort(self, request, context):
-        self.prepared = False
-        print(f"Payment aborted for order {request.order_id}")
-        return payment_pb2.AbortResponse(aborted=True)
+        try:
+            print("Aborting payment")
+            self.prepared = False
+            return payment_pb2.AbortResponse(aborted=True, message = "Payment aborted")
+        except Exception as e:
+            print(f"Aborting failed with exception: {e}")
+            return payment_pb2.AbortResponse(aborted=False, message="Unexpected error while aborting payment: " + str(e))
 
 def serve():
     # Create a gRPC server

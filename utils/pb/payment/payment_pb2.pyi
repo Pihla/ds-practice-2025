@@ -11,10 +11,12 @@ class PrepareRequest(_message.Message):
     def __init__(self, order_id: _Optional[str] = ...) -> None: ...
 
 class PrepareResponse(_message.Message):
-    __slots__ = ("ready",)
+    __slots__ = ("ready", "message")
     READY_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
     ready: bool
-    def __init__(self, ready: bool = ...) -> None: ...
+    message: str
+    def __init__(self, ready: bool = ..., message: _Optional[str] = ...) -> None: ...
 
 class CommitRequest(_message.Message):
     __slots__ = ("order_id",)
@@ -23,10 +25,12 @@ class CommitRequest(_message.Message):
     def __init__(self, order_id: _Optional[str] = ...) -> None: ...
 
 class CommitResponse(_message.Message):
-    __slots__ = ("success",)
+    __slots__ = ("success", "message")
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
     success: bool
-    def __init__(self, success: bool = ...) -> None: ...
+    message: str
+    def __init__(self, success: bool = ..., message: _Optional[str] = ...) -> None: ...
 
 class AbortRequest(_message.Message):
     __slots__ = ("order_id",)
@@ -35,7 +39,9 @@ class AbortRequest(_message.Message):
     def __init__(self, order_id: _Optional[str] = ...) -> None: ...
 
 class AbortResponse(_message.Message):
-    __slots__ = ("aborted",)
+    __slots__ = ("aborted", "message")
     ABORTED_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
     aborted: bool
-    def __init__(self, aborted: bool = ...) -> None: ...
+    message: str
+    def __init__(self, aborted: bool = ..., message: _Optional[str] = ...) -> None: ...

@@ -14,6 +14,7 @@ message PrepareRequest {
 
 message PrepareResponse {
     bool ready = 1;
+    string message = 2;
 }
 
 message CommitRequest {
@@ -22,6 +23,7 @@ message CommitRequest {
 
 message CommitResponse {
     bool success = 1;
+    string message = 2;
 }
 
 message AbortRequest {
@@ -30,5 +32,6 @@ message AbortRequest {
 
 message AbortResponse {
     bool aborted = 1;
+    string message = 2;
 }
 

@@ -88,30 +88,89 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
                     print(f"[{self.id}] Leader {self.leader_id} is trying to execute.")
                     self.execute_order()
 
-    def execute_order(self):
-        # Node tries to retrive the order from Order Queue
-        order_response = self.dequeue_order()
-        if order_response:
-            print(f"[{self.id}] Order is being executed, ID: {order_response.orderId}")
-            database_response = self.update_database(order_response)
-            if database_response:
-                print(f"[{self.id}] Order execution finished, ID: {order_response.orderId}")
+    # Asks database and dummy payment service to prepare and returns whether all accepted
+    def prepare_all(self, order, order_data):
+        # Prepare decrementing number of books in database
+        with grpc.insecure_channel('books_database1: 50059') as channel:
+            stub = books_database_grpc.BooksDatabaseServiceStub(channel)
+            for book in order_data["items"]:
+                prepare_request = books_database.PrepareRequest(order_id=order.orderId, title=book["name"],
+                                                                amount=book["quantity"])
+                response = stub.Prepare(prepare_request)
+                if not response.ready:
+                    print(f"Prepare database rejected for book {book['name']}, amount {book['quantity']}, order {order.orderId}")
+                    return False
+
+        # Prepare payment
+        with grpc.insecure_channel('payment: 50062') as channel:
+            stub = payment_grpc.PaymentServiceStub(channel)
+            prepare_response = stub.Prepare(payment.PrepareRequest(order_id=order.orderId))
+            if not prepare_response.ready:
+                print(f"Prepare payment rejected for order {order.orderId}")
+                return False
+
+        print(f"Prepared successfully.")
+        return True
+
+    # Aborts all prepared events for the order
+    def abort_all(self, order, order_data):
+        # Abort decrementing number of books in database
+        with grpc.insecure_channel('books_database1: 50059') as channel:
+            stub = books_database_grpc.BooksDatabaseServiceStub(channel)
+            for book_line in order_data["items"]:
+                abort_request = books_database.AbortRequest(order_id=order.orderId, title=book_line["name"],
+                                                            amount=book_line["quantity"])
+                response = stub.Abort(abort_request)
+                if not response.aborted:
+                    print("Error aborting database: " + response.message)
+
+        # Abort payment
+        with grpc.insecure_channel('payment: 50062') as channel:
+            stub = payment_grpc.PaymentServiceStub(channel)
+            abort_request = payment.AbortRequest(order_id=order.orderId)
+            response = stub.Abort(abort_request)
+            if not response.aborted:
+                print("Error aborting payment: " + response.message)
+
+    # Commits all prepared events for the order
+    def commit_all(self, order, order_data):
+        # Commit decrementing number of books in database
+        with grpc.insecure_channel('books_database1: 50059') as channel:
+            stub = books_database_grpc.BooksDatabaseServiceStub(channel)
+            for book in order_data["items"]:
+                commit_request = books_database.CommitRequest(order_id=order.orderId, title=book["name"],
+                                                              amount=book["quantity"])
+                response = stub.Commit(commit_request)
+                if not response.success:
+                    print(f"Failed to commit, reason: {response.message}")
+        with grpc.insecure_channel('payment: 50062') as channel:
+            stub = payment_grpc.PaymentServiceStub(channel)
+            commit_response = stub.Commit(payment.CommitRequest(order_id=order.orderId))
+            if commit_response.success:
+                print("Dummy payment was successful.")
             else:
-                print(f"[{self.id}] Order execution failed, ID: {order_response.orderId}")
+                print(f"Failed to commit, reason: {commit_response.message}")
 
-            # Execute dummy payment
-            print("Trying to perform dummy payment")
-            try:
-                with grpc.insecure_channel('payment:50062') as channel:
-                    stub = payment_grpc.PaymentServiceStub(channel)
-                    prepare_response = stub.Prepare(payment.PrepareRequest(order_id = order_response.orderId))
-                    if prepare_response.ready:
-                        commit_response = stub.Commit(payment.CommitRequest(order_id = order_response.orderId))
-                        if commit_response.success:
-                            print("Dummy payment was successful.")
-            except Exception as e:
-                print(f"Error: {e}")
+    def execute_order(self):
+        # Node tries to retrieve the order from Order Queue
+        order = self.dequeue_order()
+        if order:
+            print(f"Order is being executed, ID: {order.orderId}")
+            order_data = ast.literal_eval(order.full_request_data)
 
+            # Prepare
+            agreed_to_prepare = self.prepare_all(order, order_data)
+            print(f"All participants agreed to prepare order {order.orderId}: {agreed_to_prepare}")
+
+            # Abort
+            if not agreed_to_prepare:
+                self.abort_all(order, order_data)
+                print(f"Order {order.orderId} was aborted.")
+                return
+
+            # Commit
+            self.commit_all(order, order_data)
+            print(f"Order {order.orderId} was committed.")
 
     def dequeue_order(self):
         try:
@@ -124,45 +183,6 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
         except Exception as e:
             print(f"[{self.id}] Failed to dequeue: {e}")
         return None
-
-    def update_database(self, order):
-        order_data = ast.literal_eval(order.full_request_data)
-
-        try:
-            with grpc.insecure_channel('books_database1: 50059') as channel:
-                stub = books_database_grpc.BooksDatabaseServiceStub(channel)
-
-                agreed_to_prepare = True
-                # Prepare
-                for book in order_data["items"]:
-                    prepare_request = books_database.PrepareRequest(order_id = order.orderId, title=book["name"], amount=book["quantity"])
-                    response = stub.Prepare(prepare_request)
-                    if not response.ready:
-                        print(f"Failed to decrement stock, reason: {response.message}")
-                        agreed_to_prepare = False
-                        break
-
-                # Abort
-                if not agreed_to_prepare:
-                    for book_line in order_data["items"]:
-                        abort_request = books_database.AbortRequest(order_id = order.orderId, title=book_line["name"],
-                                                                    amount=book_line["quantity"])
-                        response = stub.Abort(abort_request)
-                        if not response.aborted:
-                            print(f"Failed to abort, reason: {response.message}")
-                    return False
-
-                # Commit
-                for book in order_data["items"]:
-                    commit_request = books_database.CommitRequest(order_id = order.orderId, title=book["name"], amount=book["quantity"])
-                    response = stub.Commit(commit_request)
-                    if not response.success:
-                        print(f"Failed to commit, reason: {response.message}")
-                        return False
-        except Exception as e:
-            print(f"[{self.id}] Failed to update database: {e}")
-            return False
-        return True
 
     def monitor_leader(self):
         # Monitor whether the leader is alive
