@@ -127,21 +127,42 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
 
     def update_database(self, order):
         order_data = ast.literal_eval(order.full_request_data)
-        is_success = True
 
         try:
             with grpc.insecure_channel('books_database1: 50059') as channel:
                 stub = books_database_grpc.BooksDatabaseServiceStub(channel)
+
+                agreed_to_prepare = True
+                # Prepare
                 for book in order_data["items"]:
-                    decrement_stock_request = books_database.DecrementStockRequest(title=book["name"], amount=book["quantity"])
-                    response = stub.DecrementStock(decrement_stock_request)
-                    if not response.is_success:
+                    prepare_request = books_database.PrepareRequest(order_id = order.orderId, title=book["name"], amount=book["quantity"])
+                    response = stub.Prepare(prepare_request)
+                    if not response.ready:
                         print(f"Failed to decrement stock, reason: {response.message}")
-                        is_success = False
+                        agreed_to_prepare = False
+                        break
+
+                # Abort
+                if not agreed_to_prepare:
+                    for book_line in order_data["items"]:
+                        abort_request = books_database.AbortRequest(order_id = order.orderId, title=book_line["name"],
+                                                                    amount=book_line["quantity"])
+                        response = stub.Abort(abort_request)
+                        if not response.aborted:
+                            print(f"Failed to abort, reason: {response.message}")
+                    return False
+
+                # Commit
+                for book in order_data["items"]:
+                    commit_request = books_database.CommitRequest(order_id = order.orderId, title=book["name"], amount=book["quantity"])
+                    response = stub.Commit(commit_request)
+                    if not response.success:
+                        print(f"Failed to commit, reason: {response.message}")
+                        return False
         except Exception as e:
             print(f"[{self.id}] Failed to update database: {e}")
-            is_success = False
-        return is_success
+            return False
+        return True
 
     def monitor_leader(self):
         # Monitor whether the leader is alive

@@ -4,6 +4,54 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class PrepareRequest(_message.Message):
+    __slots__ = ("order_id", "title", "amount")
+    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
+    TITLE_FIELD_NUMBER: _ClassVar[int]
+    AMOUNT_FIELD_NUMBER: _ClassVar[int]
+    order_id: str
+    title: str
+    amount: int
+    def __init__(self, order_id: _Optional[str] = ..., title: _Optional[str] = ..., amount: _Optional[int] = ...) -> None: ...
+
+class PrepareResponse(_message.Message):
+    __slots__ = ("ready",)
+    READY_FIELD_NUMBER: _ClassVar[int]
+    ready: bool
+    def __init__(self, ready: bool = ...) -> None: ...
+
+class CommitRequest(_message.Message):
+    __slots__ = ("order_id", "title", "amount")
+    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
+    TITLE_FIELD_NUMBER: _ClassVar[int]
+    AMOUNT_FIELD_NUMBER: _ClassVar[int]
+    order_id: str
+    title: str
+    amount: int
+    def __init__(self, order_id: _Optional[str] = ..., title: _Optional[str] = ..., amount: _Optional[int] = ...) -> None: ...
+
+class CommitResponse(_message.Message):
+    __slots__ = ("success",)
+    SUCCESS_FIELD_NUMBER: _ClassVar[int]
+    success: bool
+    def __init__(self, success: bool = ...) -> None: ...
+
+class AbortRequest(_message.Message):
+    __slots__ = ("order_id", "title", "amount")
+    ORDER_ID_FIELD_NUMBER: _ClassVar[int]
+    TITLE_FIELD_NUMBER: _ClassVar[int]
+    AMOUNT_FIELD_NUMBER: _ClassVar[int]
+    order_id: str
+    title: str
+    amount: int
+    def __init__(self, order_id: _Optional[str] = ..., title: _Optional[str] = ..., amount: _Optional[int] = ...) -> None: ...
+
+class AbortResponse(_message.Message):
+    __slots__ = ("aborted",)
+    ABORTED_FIELD_NUMBER: _ClassVar[int]
+    aborted: bool
+    def __init__(self, aborted: bool = ...) -> None: ...
+
 class ReadRequest(_message.Message):
     __slots__ = ("title",)
     TITLE_FIELD_NUMBER: _ClassVar[int]
@@ -29,21 +77,3 @@ class WriteResponse(_message.Message):
     IS_SUCCESS_FIELD_NUMBER: _ClassVar[int]
     is_success: bool
     def __init__(self, is_success: bool = ...) -> None: ...
-
-class DecrementStockRequest(_message.Message):
-    __slots__ = ("title", "amount")
-    TITLE_FIELD_NUMBER: _ClassVar[int]
-    AMOUNT_FIELD_NUMBER: _ClassVar[int]
-    title: str
-    amount: int
-    def __init__(self, title: _Optional[str] = ..., amount: _Optional[int] = ...) -> None: ...
-
-class DecrementStockResponse(_message.Message):
-    __slots__ = ("is_success", "updated_stock", "message")
-    IS_SUCCESS_FIELD_NUMBER: _ClassVar[int]
-    UPDATED_STOCK_FIELD_NUMBER: _ClassVar[int]
-    MESSAGE_FIELD_NUMBER: _ClassVar[int]
-    is_success: bool
-    updated_stock: int
-    message: str
-    def __init__(self, is_success: bool = ..., updated_stock: _Optional[int] = ..., message: _Optional[str] = ...) -> None: ...

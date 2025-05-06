@@ -14,6 +14,21 @@ class BooksDatabaseServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.Prepare = channel.unary_unary(
+                '/books_database.BooksDatabaseService/Prepare',
+                request_serializer=books__database__pb2.PrepareRequest.SerializeToString,
+                response_deserializer=books__database__pb2.PrepareResponse.FromString,
+                )
+        self.Commit = channel.unary_unary(
+                '/books_database.BooksDatabaseService/Commit',
+                request_serializer=books__database__pb2.CommitRequest.SerializeToString,
+                response_deserializer=books__database__pb2.CommitResponse.FromString,
+                )
+        self.Abort = channel.unary_unary(
+                '/books_database.BooksDatabaseService/Abort',
+                request_serializer=books__database__pb2.AbortRequest.SerializeToString,
+                response_deserializer=books__database__pb2.AbortResponse.FromString,
+                )
         self.Read = channel.unary_unary(
                 '/books_database.BooksDatabaseService/Read',
                 request_serializer=books__database__pb2.ReadRequest.SerializeToString,
@@ -24,15 +39,28 @@ class BooksDatabaseServiceStub(object):
                 request_serializer=books__database__pb2.WriteRequest.SerializeToString,
                 response_deserializer=books__database__pb2.WriteResponse.FromString,
                 )
-        self.DecrementStock = channel.unary_unary(
-                '/books_database.BooksDatabaseService/DecrementStock',
-                request_serializer=books__database__pb2.DecrementStockRequest.SerializeToString,
-                response_deserializer=books__database__pb2.DecrementStockResponse.FromString,
-                )
 
 
 class BooksDatabaseServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def Prepare(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Commit(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Abort(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def Read(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -46,15 +74,24 @@ class BooksDatabaseServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def DecrementStock(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_BooksDatabaseServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'Prepare': grpc.unary_unary_rpc_method_handler(
+                    servicer.Prepare,
+                    request_deserializer=books__database__pb2.PrepareRequest.FromString,
+                    response_serializer=books__database__pb2.PrepareResponse.SerializeToString,
+            ),
+            'Commit': grpc.unary_unary_rpc_method_handler(
+                    servicer.Commit,
+                    request_deserializer=books__database__pb2.CommitRequest.FromString,
+                    response_serializer=books__database__pb2.CommitResponse.SerializeToString,
+            ),
+            'Abort': grpc.unary_unary_rpc_method_handler(
+                    servicer.Abort,
+                    request_deserializer=books__database__pb2.AbortRequest.FromString,
+                    response_serializer=books__database__pb2.AbortResponse.SerializeToString,
+            ),
             'Read': grpc.unary_unary_rpc_method_handler(
                     servicer.Read,
                     request_deserializer=books__database__pb2.ReadRequest.FromString,
@@ -65,11 +102,6 @@ def add_BooksDatabaseServiceServicer_to_server(servicer, server):
                     request_deserializer=books__database__pb2.WriteRequest.FromString,
                     response_serializer=books__database__pb2.WriteResponse.SerializeToString,
             ),
-            'DecrementStock': grpc.unary_unary_rpc_method_handler(
-                    servicer.DecrementStock,
-                    request_deserializer=books__database__pb2.DecrementStockRequest.FromString,
-                    response_serializer=books__database__pb2.DecrementStockResponse.SerializeToString,
-            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'books_database.BooksDatabaseService', rpc_method_handlers)
@@ -79,6 +111,57 @@ def add_BooksDatabaseServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class BooksDatabaseService(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def Prepare(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/Prepare',
+            books__database__pb2.PrepareRequest.SerializeToString,
+            books__database__pb2.PrepareResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Commit(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/Commit',
+            books__database__pb2.CommitRequest.SerializeToString,
+            books__database__pb2.CommitResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Abort(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/Abort',
+            books__database__pb2.AbortRequest.SerializeToString,
+            books__database__pb2.AbortResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def Read(request,
@@ -111,22 +194,5 @@ class BooksDatabaseService(object):
         return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/Write',
             books__database__pb2.WriteRequest.SerializeToString,
             books__database__pb2.WriteResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def DecrementStock(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/books_database.BooksDatabaseService/DecrementStock',
-            books__database__pb2.DecrementStockRequest.SerializeToString,
-            books__database__pb2.DecrementStockResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

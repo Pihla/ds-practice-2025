@@ -21,9 +21,18 @@ class BooksDatabaseService(books_database_grpc.BooksDatabaseServiceServicer):
             "The Lord of the Rings": 10,
             "The Twilight" : 10,
         }
+        self.prepared_order_lines = {} # key: book_title, value: (order_id, amount)
 
     def Read(self, request, context=None):
         stock = self.store.get(request.title, 0)
+        return books_database.ReadResponse(stock=stock)
+
+    # Reads value how many books are left when all prepared orders would be executed
+    def ReadConsideringPreparedOrders(self, request, context=None):
+        stock = self.store.get(request.title, 0)
+        orders_with_current_title = self.prepared_order_lines.setdefault(request.title, [])
+        for order_id, amount in orders_with_current_title:
+            stock -= amount
         return books_database.ReadResponse(stock=stock)
 
     def Write(self, request, context=None):
@@ -66,26 +75,44 @@ class PrimaryReplica(BooksDatabaseService):
             print("Could not replicate to all backup stubs.")
         return books_database.WriteResponse(is_success=True)
 
-    def DecrementStock(self, request, context):
+    # Checks that there is enough of the book even when all currently prepared orders are filled, adds current order line to prepared order lines
+    def Prepare(self, request, context):
+        read_request = books_database.ReadRequest(title=request.title)
+        read_response = self.ReadConsideringPreparedOrders(read_request)
+        stock = read_response.stock
+        ready = stock >= request.amount
+        self.prepared_order_lines[request.title] = (request.order_id, request.amount)
+        print(f"Prepared to remove {request.amount} copies of {request.title} for order {request.order_id}")
+        return books_database.PrepareResponse(ready=ready)
+
+    # Removes order line from prepared order lines
+    def Abort(self, request, context):
+        self.prepared_order_lines.pop(request.title)
+        print(f"Aborted removing {request.amount} copies of {request.title} for order {request.order_id}")
+        return books_database.AbortResponse(aborted=True)
+
+    # Commits order line by updating value in database
+    def Commit(self, request, context):
+        success = self.DecrementStock(request.title, request.amount)
+        print(f"Committed order {request.order_id} by removing {request.amount} copies of {request.title}")
+        return books_database.CommitResponse(success=success)
+
+    def DecrementStock(self, title, amount):
         # Lock each title when working on it
-        lock = self._get_lock(request.title)
+        lock = self._get_lock(title)
         with lock:
             # Handle decrement logic
-            read_request = books_database.ReadRequest(title=request.title)
+            read_request = books_database.ReadRequest(title=title)
             read_response = self.Read(read_request)
 
-            # Check if there is enough to buy
-            if read_response.stock < request.amount:
-                return books_database.DecrementStockResponse(is_success=False, updated_stock=-1, message="Not enough stock.")
-
-            new_stock = read_response.stock - request.amount
+            new_stock = read_response.stock - amount
             # Writes to local and to backups
-            write_request = books_database.WriteRequest(title=request.title, new_stock=new_stock)
+            write_request = books_database.WriteRequest(title=title, new_stock=new_stock)
             write_response = self.Write(write_request)
             # If write is done then it is success
             if write_response.is_success:
-                return books_database.DecrementStockResponse(is_success=True, updated_stock=new_stock, message="Stock updated.")
-            return books_database.DecrementStockResponse(is_success=False, updated_stock=-1, message="Unexpected error in write.")
+                return True
+            return False
 
 def serve():
     service_id = int(os.getenv("DATABASE_ID"))
