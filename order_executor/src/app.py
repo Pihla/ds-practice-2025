@@ -172,18 +172,35 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
             order_data = ast.literal_eval(order.full_request_data)
 
             # Prepare
-            agreed_to_prepare = self.prepare_all(order, order_data)
-            print(f"All participants agreed to prepare order {order.orderId}: {agreed_to_prepare}")
+            while True:
+                try:
+                    agreed_to_prepare = self.prepare_all(order, order_data)
+                    print(f"All participants agreed to prepare order {order.orderId}: {agreed_to_prepare}")
+                    break
+                except Exception as e:
+                    print(f"Failed to prepare order {order.orderId}: {str(e)[:100]}...\n trying again later.")
+                    time.sleep(5)
 
             # Abort
             if not agreed_to_prepare:
-                all_succeed = self.abort_all(order, order_data)
-                print(f"Order {order.orderId} was aborted successfully: {all_succeed}.")
-                return
+                while True:
+                    try:
+                        all_succeed = self.abort_all(order, order_data)
+                        print(f"Order {order.orderId} was aborted successfully: {all_succeed}.")
+                        return
+                    except Exception as e:
+                        print(f"Failed to abort order {order.orderId}: {str(e)[:100]}...\n trying again later.")
+                        time.sleep(5)
 
             # Commit
-            all_succeed = self.commit_all(order, order_data)
-            print(f"Order {order.orderId} was committed successfully: {all_succeed}.")
+            while True:
+                try:
+                    all_succeed = self.commit_all(order, order_data)
+                    print(f"Order {order.orderId} was committed successfully: {all_succeed}.")
+                    return
+                except Exception as e:
+                    print(f"Failed to commit order {order.orderId}: {str(e)[:100]}...\n trying again later.")
+                    time.sleep(5)
 
     def dequeue_order(self):
         try:
