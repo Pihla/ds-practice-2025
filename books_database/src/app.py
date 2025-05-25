@@ -20,6 +20,8 @@ class BooksDatabaseService(books_database_grpc.BooksDatabaseServiceServicer):
         self.store = {
             "The Lord of the Rings": 10,
             "The Twilight" : 10,
+            "The Book Thief": 10,
+            "Pride and Prejudice": 10,
         }
         self.prepared_order_lines = {} # key: book_title, value: list of (order_id, amount)
 

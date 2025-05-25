@@ -44,6 +44,7 @@ def send_message_to_ai(message_to_ai):
 # fraud_detection_pb2_grpc.FraudDetectionServiceServicer
 class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, BaseService):
     def __init__(self):
+        self.banned_credit_cards = ["0000000000000000"]
         super().__init__("FraudFetectionService", 1)
         self.when_to_execute_methods = [{"method": self.check_user_info_for_fraud, "min_vc_for_exec": [2, 0, 0]},
                                               {"method": self.check_credit_card_info_for_fraud, "min_vc_for_exec": [3, 1, 0]}]
@@ -110,8 +111,8 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
         except Exception as e:
             print(f"Using fraud detection AI API failed. Cause: {e}")
             print("Using simple fraud detection as fallback")
-            if order_data.amount > 50:
-                validity_message = f"Order is fraudulent. Amount {order_data.amount} is too high."
+            if order_data.creditCard.number in self.banned_credit_cards:
+                validity_message = f"Order is fraudulent. Credit card number is in banned list."
                 self.send_order_failure_to_orchestrator(order_id, validity_message)
                 return
 

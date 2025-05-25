@@ -68,8 +68,8 @@ class SuggestionsService(suggestions_grpc.SuggestionsServiceServicer, BaseServic
             print(f"Using suggestions AI API failed. Cause: {e}")
             print("Using dummy suggestions as fallback.")
             suggested_books = [
-                suggestions.Book(bookId="000", title="Rehepapp", author="Andrus Kivirähk"),
-                suggestions.Book(bookId="000", title="Kevade", author="Oskar Luts")
+                orchestrator.Book(bookId="000", title="Rehepapp", author="Andrus Kivirähk"),
+                orchestrator.Book(bookId="000", title="Kevade", author="Oskar Luts")
             ]
 
         # Send book suggestions to orchestrator
