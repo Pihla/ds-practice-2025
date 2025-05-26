@@ -92,7 +92,7 @@ class OrchestratorService(orchestrator_grpc.OrchestratorServiceServicer):
     # Create an RPC function to handle rejected order
     def AcceptOrderNotApprovedMessage(self, request, context):
         order_id = request.orderId
-        print(f"Received order not approves message for order {order_id}, message: {request.message}")
+        print(f"Received order not approved message for order {order_id}, message: {request.message}")
         active_orders[order_id] = {"status": "failure", "message": request.message}
         return Empty()
 

@@ -145,5 +145,5 @@ class BaseService:
     def send_order_failure_to_orchestrator(self, order_id, message):
         with grpc.insecure_channel('orchestrator:5001') as channel:
             stub = orchestrator_grpc.OrchestratorServiceStub(channel)
-            print(f"Sending order {order_id} failure message {message} to orchestrator.")
+            print(f"Sending order {order_id} failure message '{message}' to orchestrator.")
             stub.AcceptOrderNotApprovedMessage(orchestrator.OrderNotApprovedData(orderId=order_id, message=message))
