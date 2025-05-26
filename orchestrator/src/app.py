@@ -42,6 +42,44 @@ import orderqueue_pb2 as orderqueue
 import orderqueue_pb2_grpc as orderqueue_grpc
 import grpc
 
+# Set up metrics
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+from opentelemetry import metrics
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
+# Service name is required for most backends
+resource = Resource.create(attributes={
+    SERVICE_NAME: "orchestrator",
+})
+
+tracerProvider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="observability:4317", insecure=True))
+tracerProvider.add_span_processor(processor)
+trace.set_tracer_provider(tracerProvider)
+
+reader = PeriodicExportingMetricReader(
+    OTLPMetricExporter(endpoint="http://observability:4318/v1/metrics")
+)
+meterProvider = MeterProvider(resource=resource, metric_readers=[reader])
+metrics.set_meter_provider(meterProvider)
+
+tracer = trace.get_tracer("orchestrator.tracer")
+meter = metrics.get_meter("orchestrator.meter")
+# Metrics
+order_counter = meter.create_counter(name="orders.total", description="Total number of orders processed.", unit="1") # Counter
+failed_order_counter = meter.create_counter(name="orders.failed", description="Total number of rejected orders.", unit="1") # Counter
+in_progress_orders = meter.create_up_down_counter(name="orders.in_progress", description="Currently processing orders count.", unit="1") # UpDownCounter
+processing_duration = meter.create_histogram(name="orders.processing_duration", description="Duration of processing.", unit="s") # Histogram
+
+
 active_orders = {}
 
 class OrchestratorService(orchestrator_grpc.OrchestratorServiceServicer):
@@ -187,79 +225,93 @@ def checkout():
     """
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
-    # Get request object data to json
-    print("Received POST REQUEST /checkout")
-    request_data = json.loads(request.data)
+    with tracer.start_as_current_span("checkout") as span:
+        start_time = time.time()
 
-    # Print request object data
-    print("POST REQUEST Data:", request_data)
+        # Get request object data to json
+        print("Received POST REQUEST /checkout")
+        request_data = json.loads(request.data)
 
-    # Define order id
-    order_id = str(uuid.uuid4())
+        # Print request object data
+        print("POST REQUEST Data:", request_data)
 
-    # Add current order to dictionary of active orders
-    active_orders[order_id] = {"status": "processing"}
+        # Define order id
+        order_id = str(uuid.uuid4())
+        span.set_attribute("order_id", order_id)
 
-    # Use threads to send new order details to fraud detection, transaction verification and book suggestions services
-    threadpool_executor = ThreadPoolExecutor(max_workers=3)
+        # Add current order to dictionary of active orders
+        active_orders[order_id] = {"status": "processing"}
+        in_progress_orders.add(1)
 
-    for f in [
-        send_new_order_to_transaction_verification_service,
-        send_new_order_to_fraud_detection_service,
-        send_new_order_to_suggestions_service,
-    ]:
-        threadpool_executor.submit(f, order_id, request_data)
+        # Use threads to send new order details to fraud detection, transaction verification and book suggestions services
+        threadpool_executor = ThreadPoolExecutor(max_workers=3)
 
-    # Check if order has been processed
-    while active_orders[order_id]["status"] == "processing":
-        time.sleep(0.1)
+        for f in [
+            send_new_order_to_transaction_verification_service,
+            send_new_order_to_fraud_detection_service,
+            send_new_order_to_suggestions_service,
+        ]:
+            threadpool_executor.submit(f, order_id, request_data)
 
-    # Send shutdown signal to threads
-    threadpool_executor.shutdown(wait=False)
+        # Check if order has been processed
+        while active_orders[order_id]["status"] == "processing":
+            time.sleep(0.1)
 
-    # Check if order is accepted or rejected and construct response to frontend
-    if active_orders[order_id]["status"] == "success":
-        queue_response = enqueue_order(order_id, request_data)
-        if queue_response.is_valid:
-            suggested_books = active_orders[order_id]["suggested_books"]
+        # Send shutdown signal to threads
+        threadpool_executor.shutdown(wait=False)
+
+        # Check if order is accepted or rejected and construct response to frontend
+        if active_orders[order_id]["status"] == "success":
+            span.add_event("Order approved.")
+            order_counter.add(1)
+            queue_response = enqueue_order(order_id, request_data)
+            if queue_response.is_valid:
+                suggested_books = active_orders[order_id]["suggested_books"]
+                order_status_response = {
+                    'orderId': order_id,
+                    'status': "Order Approved",
+                    'suggestedBooks': [
+                        {"bookId": book.bookId, "title": book.title, "author": book.author}
+                        for book in suggested_books
+                    ]
+                }
+            else: # if cannot queue the order then cannot process it
+                order_status_response = {
+                    'orderId': order_id,
+                    'status': "Could not process the order.",
+                    'suggestedBooks': []
+                }
+        else:
+            failure_message = active_orders[order_id]["message"]
+            span.set_attribute("order.failure_reason", failure_message)
+            order_counter.add(1)
+            failed_order_counter.add(1)
             order_status_response = {
                 'orderId': order_id,
-                'status': "Order Approved",
-                'suggestedBooks': [
-                    {"bookId": book.bookId, "title": book.title, "author": book.author}
-                    for book in suggested_books
-                ]
-            }
-        else: # if cannot queue the order then cannot process it
-            order_status_response = {
-                'orderId': order_id,
-                'status': "Could not process the order.",
+                'status': f"Order not approved. {failure_message}",
                 'suggestedBooks': []
             }
-    else:
-        failure_message = active_orders[order_id]["message"]
-        order_status_response = {
-            'orderId': order_id,
-            'status': f"Order not approved. {failure_message}",
-            'suggestedBooks': []
-        }
 
-    # Check if vector clocks are valid in each service and delete order from each service
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        final_vector_clock = [3,2,1]
-        futures = [executor.submit(f, order_id, final_vector_clock) for f in
-                   [delete_order_from_transaction_verification_service, delete_order_from_fraud_detection_service, delete_order_from_suggestions_service]]
+        processing_time = time.time() - start_time
+        processing_duration.record(processing_time)
+        in_progress_orders.add(-1)
 
-        all_vector_clocks_ok = all(future.result().everythingOK for future in futures)
-        if all_vector_clocks_ok:
-            print(f"All vector clocks ok for order {order_id}")
-        else:
-            print(f"ERROR: mistake with vector clocks for order {order_id}")
+        # Check if vector clocks are valid in each service and delete order from each service
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            final_vector_clock = [3,2,1]
+            futures = [executor.submit(f, order_id, final_vector_clock) for f in
+                       [delete_order_from_transaction_verification_service, delete_order_from_fraud_detection_service, delete_order_from_suggestions_service]]
 
-    # Delete current order from dictionary of active orders
-    del active_orders[order_id]
+            all_vector_clocks_ok = all(future.result().everythingOK for future in futures)
+            if all_vector_clocks_ok:
+                print(f"All vector clocks ok for order {order_id}")
+            else:
+                print(f"ERROR: mistake with vector clocks for order {order_id}")
 
-    return order_status_response
+        # Delete current order from dictionary of active orders
+        del active_orders[order_id]
+
+        return order_status_response
 
 
 def serve():
