@@ -33,6 +33,12 @@ sys.path.insert(0, payment_grpc_path)
 import payment_pb2 as payment
 import payment_pb2_grpc as payment_grpc
 
+# Set up orchestrator
+orchestrator_grpc_path = os.path.abspath(os.path.join(FILE, '../../../utils/pb/orchestrator'))
+sys.path.insert(0, orchestrator_grpc_path)
+import orchestrator_pb2 as orchestrator
+import orchestrator_pb2_grpc as orchestrator_grpc
+
 import grpc
 from concurrent import futures
 from google.protobuf.empty_pb2 import Empty
@@ -183,6 +189,12 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
 
             # Abort
             if not agreed_to_prepare:
+                with grpc.insecure_channel('orchestrator:5001') as channel:
+                    stub = orchestrator_grpc.OrchestratorServiceStub(channel)
+                    message = "Order aborted."
+                    print(f"Sending order {order.orderId} failure message '{message}' to orchestrator.")
+                    stub.AcceptOrderNotApprovedMessage(
+                        orchestrator.OrderNotApprovedData(orderId=order.orderId, message=message))
                 while True:
                     try:
                         all_succeed = self.abort_all(order, order_data)
@@ -197,6 +209,11 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
                 try:
                     all_succeed = self.commit_all(order, order_data)
                     print(f"Order {order.orderId} was committed successfully: {all_succeed}.")
+                    with grpc.insecure_channel('orchestrator:5001') as channel:
+                        stub = orchestrator_grpc.OrchestratorServiceStub(channel)
+                        print(f"Sending order {order.orderId} confirmation to orchestrator.")
+                        stub.AcceptOrderConfirmation(
+                            orchestrator.OrderConfirmedData(orderId=order.orderId))
                     return
                 except Exception as e:
                     print(f"Failed to commit order {order.orderId}: {str(e)[:100]}...\n trying again later.")

@@ -14,6 +14,12 @@ class OrderNotApprovedData(_message.Message):
     message: str
     def __init__(self, orderId: _Optional[str] = ..., message: _Optional[str] = ...) -> None: ...
 
+class OrderConfirmedData(_message.Message):
+    __slots__ = ("orderId",)
+    ORDERID_FIELD_NUMBER: _ClassVar[int]
+    orderId: str
+    def __init__(self, orderId: _Optional[str] = ...) -> None: ...
+
 class Book(_message.Message):
     __slots__ = ("bookId", "title", "author")
     BOOKID_FIELD_NUMBER: _ClassVar[int]

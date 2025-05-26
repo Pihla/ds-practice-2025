@@ -25,6 +25,11 @@ class OrchestratorServiceStub(object):
                 request_serializer=orchestrator__pb2.BookSuggestions.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
+        self.AcceptOrderConfirmation = channel.unary_unary(
+                '/orchestrator.OrchestratorService/AcceptOrderConfirmation',
+                request_serializer=orchestrator__pb2.OrderConfirmedData.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
 
 
 class OrchestratorServiceServicer(object):
@@ -42,6 +47,12 @@ class OrchestratorServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def AcceptOrderConfirmation(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OrchestratorServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -53,6 +64,11 @@ def add_OrchestratorServiceServicer_to_server(servicer, server):
             'AcceptBookSuggestions': grpc.unary_unary_rpc_method_handler(
                     servicer.AcceptBookSuggestions,
                     request_deserializer=orchestrator__pb2.BookSuggestions.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            ),
+            'AcceptOrderConfirmation': grpc.unary_unary_rpc_method_handler(
+                    servicer.AcceptOrderConfirmation,
+                    request_deserializer=orchestrator__pb2.OrderConfirmedData.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
@@ -95,6 +111,23 @@ class OrchestratorService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/orchestrator.OrchestratorService/AcceptBookSuggestions',
             orchestrator__pb2.BookSuggestions.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AcceptOrderConfirmation(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/orchestrator.OrchestratorService/AcceptOrderConfirmation',
+            orchestrator__pb2.OrderConfirmedData.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

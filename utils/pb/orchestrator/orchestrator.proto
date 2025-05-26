@@ -6,11 +6,16 @@ package orchestrator;
 service OrchestratorService {
     rpc AcceptOrderNotApprovedMessage(OrderNotApprovedData) returns (google.protobuf.Empty);
     rpc AcceptBookSuggestions(BookSuggestions) returns (google.protobuf.Empty);
+    rpc AcceptOrderConfirmation(OrderConfirmedData) returns (google.protobuf.Empty);
 }
 
 message OrderNotApprovedData {
     string orderId = 1;
     string message = 2;
+}
+
+message OrderConfirmedData {
+    string orderId = 1;
 }
 
 message Book {

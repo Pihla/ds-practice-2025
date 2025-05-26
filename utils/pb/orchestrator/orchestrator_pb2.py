@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12orchestrator.proto\x12\x0corchestrator\x1a\x1bgoogle/protobuf/empty.proto\"8\n\x14OrderNotApprovedData\x12\x0f\n\x07orderId\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\t\"5\n\x04\x42ook\x12\x0e\n\x06\x62ookId\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x03 \x01(\t\"N\n\x0f\x42ookSuggestions\x12\x0f\n\x07orderId\x18\x01 \x01(\t\x12*\n\x0esuggestedBooks\x18\x02 \x03(\x0b\x32\x12.orchestrator.Book2\xc2\x01\n\x13OrchestratorService\x12[\n\x1d\x41\x63\x63\x65ptOrderNotApprovedMessage\x12\".orchestrator.OrderNotApprovedData\x1a\x16.google.protobuf.Empty\x12N\n\x15\x41\x63\x63\x65ptBookSuggestions\x12\x1d.orchestrator.BookSuggestions\x1a\x16.google.protobuf.Emptyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12orchestrator.proto\x12\x0corchestrator\x1a\x1bgoogle/protobuf/empty.proto\"8\n\x14OrderNotApprovedData\x12\x0f\n\x07orderId\x18\x01 \x01(\t\x12\x0f\n\x07message\x18\x02 \x01(\t\"%\n\x12OrderConfirmedData\x12\x0f\n\x07orderId\x18\x01 \x01(\t\"5\n\x04\x42ook\x12\x0e\n\x06\x62ookId\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06\x61uthor\x18\x03 \x01(\t\"N\n\x0f\x42ookSuggestions\x12\x0f\n\x07orderId\x18\x01 \x01(\t\x12*\n\x0esuggestedBooks\x18\x02 \x03(\x0b\x32\x12.orchestrator.Book2\x97\x02\n\x13OrchestratorService\x12[\n\x1d\x41\x63\x63\x65ptOrderNotApprovedMessage\x12\".orchestrator.OrderNotApprovedData\x1a\x16.google.protobuf.Empty\x12N\n\x15\x41\x63\x63\x65ptBookSuggestions\x12\x1d.orchestrator.BookSuggestions\x1a\x16.google.protobuf.Empty\x12S\n\x17\x41\x63\x63\x65ptOrderConfirmation\x12 .orchestrator.OrderConfirmedData\x1a\x16.google.protobuf.Emptyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -24,10 +24,12 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _globals['_ORDERNOTAPPROVEDDATA']._serialized_start=65
   _globals['_ORDERNOTAPPROVEDDATA']._serialized_end=121
-  _globals['_BOOK']._serialized_start=123
-  _globals['_BOOK']._serialized_end=176
-  _globals['_BOOKSUGGESTIONS']._serialized_start=178
-  _globals['_BOOKSUGGESTIONS']._serialized_end=256
-  _globals['_ORCHESTRATORSERVICE']._serialized_start=259
-  _globals['_ORCHESTRATORSERVICE']._serialized_end=453
+  _globals['_ORDERCONFIRMEDDATA']._serialized_start=123
+  _globals['_ORDERCONFIRMEDDATA']._serialized_end=160
+  _globals['_BOOK']._serialized_start=162
+  _globals['_BOOK']._serialized_end=215
+  _globals['_BOOKSUGGESTIONS']._serialized_start=217
+  _globals['_BOOKSUGGESTIONS']._serialized_end=295
+  _globals['_ORCHESTRATORSERVICE']._serialized_start=298
+  _globals['_ORCHESTRATORSERVICE']._serialized_end=577
 # @@protoc_insertion_point(module_scope)

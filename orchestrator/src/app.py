@@ -96,6 +96,13 @@ class OrchestratorService(orchestrator_grpc.OrchestratorServiceServicer):
         active_orders[order_id] = {"status": "failure", "message": request.message}
         return Empty()
 
+    # Create an RPC function to handle confirmed order
+    def AcceptOrderConfirmation(self, request, context):
+        order_id = request.orderId
+        print(f"Received order confirmation for order {order_id}")
+        active_orders[order_id]["status"] = "confirmed"
+        return Empty()
+
 # Sends new order to transaction verification service using gRPC
 def send_new_order_to_transaction_verification_service(order_id, data):
     print("Sending new order details to transaction verification service")
@@ -258,28 +265,41 @@ def checkout():
         # Send shutdown signal to threads
         threadpool_executor.shutdown(wait=False)
 
+        # Check if vector clocks are valid in each service and delete order from each service
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            final_vector_clock = [3, 2, 1]
+            futures = [executor.submit(f, order_id, final_vector_clock) for f in
+                       [delete_order_from_transaction_verification_service, delete_order_from_fraud_detection_service,
+                        delete_order_from_suggestions_service]]
+
+            all_vector_clocks_ok = all(future.result().everythingOK for future in futures)
+            if all_vector_clocks_ok:
+                print(f"All vector clocks ok for order {order_id}")
+            else:
+                print(f"ERROR: mistake with vector clocks for order {order_id}")
+
         # Check if order is accepted or rejected and construct response to frontend
-        if active_orders[order_id]["status"] == "success":
-            span.add_event("Order approved.")
-            order_counter.add(1)
+        order_confirmed = False
+        if active_orders[order_id]["status"] == "success": # if transaction verification, fraud detection and suggestions accepted the order
             queue_response = enqueue_order(order_id, request_data)
-            if queue_response.is_valid:
-                suggested_books = active_orders[order_id]["suggested_books"]
-                order_status_response = {
-                    'orderId': order_id,
-                    'status': "Order Approved",
-                    'suggestedBooks': [
-                        {"bookId": book.bookId, "title": book.title, "author": book.author}
-                        for book in suggested_books
-                    ]
-                }
-            else: # if cannot queue the order then cannot process it
-                order_status_response = {
-                    'orderId': order_id,
-                    'status': "Could not process the order.",
-                    'suggestedBooks': []
-                }
-        else:
+            if queue_response.is_valid: # if order was successfully added to order queue
+                # wait until order executor processes the order
+                while active_orders[order_id]["status"] == "success":
+                    time.sleep(0.1)
+                if active_orders[order_id]["status"] == "confirmed": # if order executor accepted the order
+                    order_confirmed = True
+                    span.add_event("Order approved.")
+                    order_counter.add(1)
+                    suggested_books = active_orders[order_id]["suggested_books"]
+                    order_status_response = {
+                        'orderId': order_id,
+                        'status': "Order Approved",
+                        'suggestedBooks': [
+                            {"bookId": book.bookId, "title": book.title, "author": book.author}
+                            for book in suggested_books
+                        ]
+                    }
+        if not order_confirmed:
             failure_message = active_orders[order_id]["message"]
             span.set_attribute("order.failure_reason", failure_message)
             order_counter.add(1)
@@ -292,18 +312,6 @@ def checkout():
 
         processing_time = time.time() - start_time
         processing_duration.record(processing_time)
-
-        # Check if vector clocks are valid in each service and delete order from each service
-        with ThreadPoolExecutor(max_workers=3) as executor:
-            final_vector_clock = [3,2,1]
-            futures = [executor.submit(f, order_id, final_vector_clock) for f in
-                       [delete_order_from_transaction_verification_service, delete_order_from_fraud_detection_service, delete_order_from_suggestions_service]]
-
-            all_vector_clocks_ok = all(future.result().everythingOK for future in futures)
-            if all_vector_clocks_ok:
-                print(f"All vector clocks ok for order {order_id}")
-            else:
-                print(f"ERROR: mistake with vector clocks for order {order_id}")
 
         # Delete current order from dictionary of active orders
         del active_orders[order_id]
