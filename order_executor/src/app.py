@@ -105,7 +105,7 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
                 response = stub.Prepare(prepare_request)
                 if not response.ready:
                     print(f"Prepare database rejected for book {book['name']}, amount {book['quantity']}, order {order.orderId}")
-                    return False
+                    return False, f"Not enough stock for book '{book['name']}'."
 
         # Prepare payment
         with grpc.insecure_channel('payment: 50062') as channel:
@@ -113,10 +113,10 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
             prepare_response = stub.Prepare(payment.PrepareRequest(order_id=order.orderId))
             if not prepare_response.ready:
                 print(f"Prepare payment rejected for order {order.orderId}")
-                return False
+                return False, "Payment rejected."
 
         print(f"Prepared successfully.")
-        return True
+        return True, ""
 
     # Aborts all prepared events for the order
     def abort_all(self, order, order_data):
@@ -180,7 +180,7 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
             # Prepare
             while True:
                 try:
-                    agreed_to_prepare = self.prepare_all(order, order_data)
+                    agreed_to_prepare, prepare_message = self.prepare_all(order, order_data)
                     print(f"All participants agreed to prepare order {order.orderId}: {agreed_to_prepare}")
                     break
                 except Exception as e:
@@ -191,10 +191,9 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
             if not agreed_to_prepare:
                 with grpc.insecure_channel('orchestrator:5001') as channel:
                     stub = orchestrator_grpc.OrchestratorServiceStub(channel)
-                    message = "Order aborted."
-                    print(f"Sending order {order.orderId} failure message '{message}' to orchestrator.")
+                    print(f"Sending order {order.orderId} failure message '{prepare_message}' to orchestrator.")
                     stub.AcceptOrderNotApprovedMessage(
-                        orchestrator.OrderNotApprovedData(orderId=order.orderId, message=message))
+                        orchestrator.OrderNotApprovedData(orderId=order.orderId, message=prepare_message))
                 while True:
                     try:
                         all_succeed = self.abort_all(order, order_data)
