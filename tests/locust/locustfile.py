@@ -8,7 +8,7 @@ BOOKS = [
 ]
 
 # Use pip install locust
-# run locust while docker container of the system is running
+# run locust command when in the folder where locustfile.py is while docker container of the system is running
 # add host to be http://localhost:8081 and specify nr of users
 
 class NonFraudulent(HttpUser):
@@ -258,5 +258,149 @@ class Fraudulent(HttpUser):
         with self.client.post("/checkout", json=payload, catch_response=True) as response:
             if "Order not approved" not in response.text:
                 response.failure("Fraudulent order was incorrectly accepted" + response.text)
+            else:
+                response.success()
+
+class Mixed(HttpUser):
+    """ Non-fraudulent and  fraudulent users buying books"""
+    wait_time = between(3, 5)
+
+    @task
+    def order_1(self):
+        """ Regular order, buying 1 book"""
+        book = BOOKS[0]
+        payload = {
+            "user": {
+                "name": f"John Stone",
+                "contact": "loadtest@example.com"
+            },
+            "creditCard": {
+                "number": "4111111111111111",
+                "expirationDate": "12/25",
+                "cvv": "123"
+            },
+            "userComment": "Stress test order",
+            "items": [{"name": book["name"], "author": book["author"], "quantity": 1}],
+            "billingAddress": {
+                "street": "123 Main St",
+                "city": "Springfield",
+                "state": "IL",
+                "zip": "62701",
+                "country": "USA"
+            },
+            "shippingMethod": "Standard",
+            "giftWrapping": True,
+            "termsAccepted": True
+        }
+
+        with self.client.post("/checkout", json=payload, catch_response=True) as response:
+            if "Order Approved" not in response.text:
+                response.failure("Legitimate order was rejected")
+            else:
+                response.success()
+
+    @task
+    def order_2(self):
+        """ Fraud, credit card number wrong"""
+        book = BOOKS[1]
+        payload = {
+            "user": {
+                "name": f"Lisa Stone",
+                "contact": "loadtest@example.com"
+            },
+            "creditCard": {
+                "number": "411111111111111",  # One number missing
+                "expirationDate": "12/25",
+                "cvv": "123"
+            },
+            "userComment": "Stress test order",
+            "items": [{"name": book["name"], "author": book["author"], "quantity": 1}],
+            "billingAddress": {
+                "street": "123 Main St",
+                "city": "Springfield",
+                "state": "IL",
+                "zip": "62701",
+                "country": "USA"
+            },
+            "shippingMethod": "Standard",
+            "giftWrapping": True,
+            "termsAccepted": True
+        }
+
+        with self.client.post("/checkout", json=payload, catch_response=True) as response:
+            if "Order not approved" not in response.text:
+                response.failure("Fraudulent order was incorrectly accepted" + response.text)
+            else:
+                response.success()
+
+class Conflicting(HttpUser):
+    """ Non-fraudulent users buying the same book"""
+    wait_time = between(3, 5)
+
+    @task
+    def order_1(self):
+        """ Regular order, buying 1 book"""
+        book = BOOKS[0]
+        payload = {
+            "user": {
+                "name": f"John Stone",
+                "contact": "loadtest@example.com"
+            },
+            "creditCard": {
+                "number": "4111111111111111",
+                "expirationDate": "12/25",
+                "cvv": "123"
+            },
+            "userComment": "Stress test order",
+            "items": [{"name": book["name"], "author": book["author"], "quantity": 1}],
+            "billingAddress": {
+                "street": "123 Main St",
+                "city": "Springfield",
+                "state": "IL",
+                "zip": "62701",
+                "country": "USA"
+            },
+            "shippingMethod": "Standard",
+            "giftWrapping": True,
+            "termsAccepted": True
+        }
+
+        with self.client.post("/checkout", json=payload, catch_response=True) as response:
+            if "Order Approved" not in response.text:
+                response.failure("Legitimate order was rejected")
+            else:
+                response.success()
+
+    @task
+    def order_2(self):
+        """ Regular order, buying 1 book"""
+        book = BOOKS[0]
+        payload = {
+            "user": {
+                "name": f"John Stone",
+                "contact": "loadtest@example.com"
+            },
+            "creditCard": {
+                "number": "4111111111111111",
+                "expirationDate": "12/25",
+                "cvv": "123"
+            },
+            "userComment": "Stress test order",
+            "items": [{"name": book["name"], "author": book["author"], "quantity": 1}],
+            "billingAddress": {
+                "street": "123 Main St",
+                "city": "Springfield",
+                "state": "IL",
+                "zip": "62701",
+                "country": "USA"
+            },
+            "shippingMethod": "Standard",
+            "giftWrapping": True,
+            "termsAccepted": True
+        }
+
+        with self.client.post("/checkout", json=payload, catch_response=True) as response:
+            if "Order Approved" not in response.text:
+                response.failure("Legitimate order was rejected")
             else:
                 response.success()
