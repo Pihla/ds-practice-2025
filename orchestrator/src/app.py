@@ -66,7 +66,7 @@ tracerProvider.add_span_processor(processor)
 trace.set_tracer_provider(tracerProvider)
 
 reader = PeriodicExportingMetricReader(
-    OTLPMetricExporter(endpoint="http://observability:4318/v1/metrics")
+    OTLPMetricExporter(endpoint="observability:4317", insecure=True)
 )
 meterProvider = MeterProvider(resource=resource, metric_readers=[reader])
 metrics.set_meter_provider(meterProvider)
