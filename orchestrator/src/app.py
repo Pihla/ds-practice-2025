@@ -76,7 +76,6 @@ meter = metrics.get_meter("orchestrator.meter")
 # Metrics
 order_counter = meter.create_counter(name="orders.total", description="Total number of orders processed.", unit="1") # Counter
 failed_order_counter = meter.create_counter(name="orders.failed", description="Total number of rejected orders.", unit="1") # Counter
-in_progress_orders = meter.create_up_down_counter(name="orders.in_progress", description="Currently processing orders count.", unit="1") # UpDownCounter
 processing_duration = meter.create_histogram(name="orders.processing_duration", description="Duration of processing.", unit="s") # Histogram
 
 
@@ -241,7 +240,6 @@ def checkout():
 
         # Add current order to dictionary of active orders
         active_orders[order_id] = {"status": "processing"}
-        in_progress_orders.add(1)
 
         # Use threads to send new order details to fraud detection, transaction verification and book suggestions services
         threadpool_executor = ThreadPoolExecutor(max_workers=3)
@@ -294,7 +292,6 @@ def checkout():
 
         processing_time = time.time() - start_time
         processing_duration.record(processing_time)
-        in_progress_orders.add(-1)
 
         # Check if vector clocks are valid in each service and delete order from each service
         with ThreadPoolExecutor(max_workers=3) as executor:

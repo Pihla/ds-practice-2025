@@ -104,7 +104,7 @@ class FraudDetectionService(fraud_detection_grpc.FraudDetectionServiceServicer, 
             if not order_is_valid:
                 validity_message = "Order is fraudulent. " + validity_message
                 print(validity_message)
-                self.send_order_failure_to_orchestrator(order_is_valid, validity_message)
+                self.send_order_failure_to_orchestrator(order_id, validity_message)
                 return
             elif order_data.creditCard.number in self.banned_credit_cards:
                 validity_message = f"Order is fraudulent. Credit card number is in banned list."

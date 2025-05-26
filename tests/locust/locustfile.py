@@ -205,7 +205,7 @@ class Fraudulent(HttpUser):
             "creditCard": {
                 "number": "4111111111111111",
                 "expirationDate": "12/25",
-                "cvv": "12" # Too short cvv
+                "cvv": "1" # Too short cvv
             },
             "userComment": "Stress test order",
             "items": [{"name": book["name"], "author": book["author"], "quantity": 1}],
@@ -301,7 +301,7 @@ class Mixed(HttpUser):
 
     @task
     def order_2(self):
-        """ Fraud, credit card number wrong"""
+        """ Fraud, credit card expired"""
         book = BOOKS[1]
         payload = {
             "user": {
@@ -309,8 +309,8 @@ class Mixed(HttpUser):
                 "contact": "loadtest@example.com"
             },
             "creditCard": {
-                "number": "411111111111111",  # One number missing
-                "expirationDate": "12/25",
+                "number": "4111111111111111",
+                "expirationDate": "12/20", # Expired card
                 "cvv": "123"
             },
             "userComment": "Stress test order",
