@@ -18,10 +18,10 @@ from concurrent import futures
 class BooksDatabaseService(books_database_grpc.BooksDatabaseServiceServicer):
     def __init__(self):
         self.store = {
-            "The Lord of the Rings": 10,
-            "The Twilight" : 10,
-            "The Book Thief": 10,
-            "Pride and Prejudice": 10,
+            "The Lord of the Rings": 100,
+            "The Twilight" : 100,
+            "The Book Thief": 100,
+            "Pride and Prejudice": 100,
         }
         self.prepared_order_lines = {} # key: book_title, value: list of (order_id, amount)
 
