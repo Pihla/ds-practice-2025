@@ -15,6 +15,41 @@ import books_database_pb2_grpc as books_database_grpc
 import grpc
 from concurrent import futures
 
+# Set up metrics
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+from opentelemetry import metrics
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
+resource = Resource.create(attributes={
+    SERVICE_NAME: "books_database",
+})
+
+tracerProvider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="observability:4317", insecure=True))
+tracerProvider.add_span_processor(processor)
+trace.set_tracer_provider(tracerProvider)
+
+reader = PeriodicExportingMetricReader(
+    OTLPMetricExporter(endpoint="observability:4317", insecure=True)
+)
+meterProvider = MeterProvider(resource=resource, metric_readers=[reader])
+metrics.set_meter_provider(meterProvider)
+
+meter = metrics.get_meter("books_database.meter")
+
+# Metric
+prepared_orders_updown = meter.create_up_down_counter(name="books_database.prepard_order_lines", description="Number of currently prepared order lines waiting for commit.") #UpDownCounter
+commit_duration = meter.create_histogram(name="books_database.commit_duration", description="Time taken to commit orders.", unit="s") # Histogram
+
+
 class BooksDatabaseService(books_database_grpc.BooksDatabaseServiceServicer):
     def __init__(self):
         self.store = {
@@ -46,12 +81,14 @@ class BooksDatabaseService(books_database_grpc.BooksDatabaseServiceServicer):
         if not request.title in self.prepared_order_lines:
             self.prepared_order_lines[request.title] = set()
         self.prepared_order_lines[request.title].add((request.order_id, request.amount))
+        prepared_orders_updown.add(1)
         #print(f"Added order line to prepared ({request.title}): {request.order_id}, {request.amount}")
         return books_database.WriteResponse(is_success=True)
 
     def RemoveOrderLineFromPrepared(self, request, context=None):
         if request.title in self.prepared_order_lines and (request.order_id, request.amount) in self.prepared_order_lines[request.title]:
             self.prepared_order_lines[request.title].remove((request.order_id, request.amount))
+            prepared_orders_updown.add(-1)
             #print(f"Removed order line from prepared ({request.title}): {request.order_id}, {request.amount}")
         else:
             pass
@@ -178,6 +215,7 @@ class PrimaryReplica(BooksDatabaseService):
 
     # Commits order line by updating value in database
     def Commit(self, request, context):
+        start_time = time.time()
         try:
             if (request.order_id, request.amount) not in self.prepared_order_lines[request.title]:
                 print(f"Order line is already committed ({request.title}): {request.order_id}, {request.amount}")
@@ -186,6 +224,8 @@ class PrimaryReplica(BooksDatabaseService):
             print(f"Committing order {request.order_id} by removing {request.amount} copies of {request.title}")
             success = self.DecrementStock(request.title, request.amount)
             self.RemoveOrderLineFromPreparedAndSendToReplicas(request, context)
+            duration = time.time() - start_time
+            commit_duration.record(duration)
             if success:
                 return books_database.CommitResponse(success=True, message = "Order successfully committed")
             else:

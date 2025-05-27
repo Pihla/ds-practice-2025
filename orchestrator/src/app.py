@@ -55,7 +55,6 @@ from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExp
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-# Service name is required for most backends
 resource = Resource.create(attributes={
     SERVICE_NAME: "orchestrator",
 })
@@ -75,7 +74,7 @@ tracer = trace.get_tracer("orchestrator.tracer")
 meter = metrics.get_meter("orchestrator.meter")
 # Metrics
 order_counter = meter.create_counter(name="orders.total", description="Total number of orders processed.", unit="1") # Counter
-failed_order_counter = meter.create_counter(name="orders.failed", description="Total number of rejected orders.", unit="1") # Counter
+rejected_counter = meter.create_counter(name="orders.rejected", description="Total number of rejected orders.", unit="1") # Counter
 processing_duration = meter.create_histogram(name="orders.processing_duration", description="Duration of processing.", unit="s") # Histogram
 
 
@@ -303,7 +302,7 @@ def checkout():
             failure_message = active_orders[order_id]["message"]
             span.set_attribute("order.failure_reason", failure_message)
             order_counter.add(1)
-            failed_order_counter.add(1)
+            rejected_counter.add(1)
             order_status_response = {
                 'orderId': order_id,
                 'status': f"Order not approved. {failure_message}",

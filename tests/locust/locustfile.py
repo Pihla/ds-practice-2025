@@ -15,7 +15,7 @@ def check_response(response, expect_approval=True):
     """ Checks if the response is as expected. """
     if expect_approval:
         if "Order Approved" not in response.text:
-            if "Not enough stock" in response.text or "Transaction failed to prepare, because luck was not in your favour" in response.text:
+            if "Not enough stock" in response.text or "Payment rejected" in response.text:
                 response.success() # Order rejected because out of stock or random in transaction declined order
             else:
                 response.failure("Legitimate order was rejected: " + response.text)

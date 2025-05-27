@@ -31,7 +31,6 @@ from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExp
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
-# Service name is required for most backends
 resource = Resource.create(attributes={
     SERVICE_NAME: "orderqueue",
 })
@@ -50,8 +49,8 @@ metrics.set_meter_provider(meterProvider)
 meter = metrics.get_meter("orderqueue.meter")
 
 # Metric
-processing_duration = meter.create_histogram(name="orders.waiting_duration", description="Duration of waiting in queue.", unit="s") # Histogram
-
+processing_duration = meter.create_histogram(name="queue.waiting_duration", description="Duration of waiting in queue.", unit="s") # Histogram
+queued_orders_updown = meter.create_up_down_counter(name="queue.queued_orders", description="Number of orders in queue.") #UpDownCounter
 
 # Create a class to define the server functions, derived from
 # orderqueue_pb2_grpc.OrderQueueServiceServicer
@@ -65,7 +64,7 @@ class OrderQueueService(orderqueue_grpc.OrderQueueServiceServicer):
     # Create an RPC function to Enqueue orders
     def Enqueue(self, request, context):
         print("Enqueueing order", str(request.orderId))
-
+        queued_orders_updown.add(1)
         # Extract the amount to determine priority
         try:
             amount = int(request.amount)
@@ -83,6 +82,7 @@ class OrderQueueService(orderqueue_grpc.OrderQueueServiceServicer):
     def Dequeue(self, request, context):
         with self.lock:
             if not self.queue.empty():
+                queued_orders_updown.add(-1)
                 _, _, enqueued_time, order = self.queue.get()
                 duration = time.time() - enqueued_time
                 processing_duration.record(duration, attributes={"queue": "queued_orders"})

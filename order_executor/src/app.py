@@ -88,7 +88,7 @@ class OrderExecutorService(order_executor_grpc.OrderExecutorServiceServicer):
     def try_execute_orders(self):
         # If the node is the leader it will try to execute an order
         while self.running:
-            time.sleep(5)
+            time.sleep(2)
             with self.leader_lock:
                 if self.leader_id == self.id:
                     print(f"[{self.id}] Leader {self.leader_id} is trying to execute.")
