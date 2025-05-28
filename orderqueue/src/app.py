@@ -35,6 +35,28 @@ resource = Resource.create(attributes={
     SERVICE_NAME: "orderqueue",
 })
 
+number_of_currently_enqueued_orders = 0
+
+class MeasurementItem:
+    def __init__(self, value):
+        self.value = value
+        self.attributes = {}
+
+class MeasurementIterable:
+    def __init__(self):
+        self.items = [MeasurementItem(0)]
+
+    def __add__(self, value):
+        self.items.append(MeasurementItem(value))
+
+    def __iter__(self):
+        return iter(self.items)
+
+measurementIterable = MeasurementIterable()
+
+def get_currently_enqueued_orders(options):
+    return measurementIterable
+
 tracerProvider = TracerProvider(resource=resource)
 processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="observability:4317", insecure=True))
 tracerProvider.add_span_processor(processor)
@@ -49,8 +71,10 @@ metrics.set_meter_provider(meterProvider)
 meter = metrics.get_meter("orderqueue.meter")
 
 # Metric
-processing_duration = meter.create_histogram(name="queue.waiting_duration", description="Duration of waiting in queue.", unit="s") # Histogram
+queue_wait_duration = meter.create_histogram(name="queue.waiting_duration", description="Duration of waiting in the order queue.", unit="s") # Histogram
 queued_orders_updown = meter.create_up_down_counter(name="queue.queued_orders", description="Number of orders in queue.") #UpDownCounter
+meter.create_observable_gauge(name="orderqueue.currently_enqueued_orders_gauge", callbacks=[get_currently_enqueued_orders],description="Current number of orders in queue (gauge).")
+
 
 # Create a class to define the server functions, derived from
 # orderqueue_pb2_grpc.OrderQueueServiceServicer
@@ -65,6 +89,9 @@ class OrderQueueService(orderqueue_grpc.OrderQueueServiceServicer):
     def Enqueue(self, request, context):
         print("Enqueueing order", str(request.orderId))
         queued_orders_updown.add(1)
+        global number_of_currently_enqueued_orders
+        number_of_currently_enqueued_orders += 1
+        measurementIterable.__add__(number_of_currently_enqueued_orders)
         # Extract the amount to determine priority
         try:
             amount = int(request.amount)
@@ -83,9 +110,13 @@ class OrderQueueService(orderqueue_grpc.OrderQueueServiceServicer):
         with self.lock:
             if not self.queue.empty():
                 queued_orders_updown.add(-1)
+                global number_of_currently_enqueued_orders
+                number_of_currently_enqueued_orders -= 1
+                measurementIterable.__add__(number_of_currently_enqueued_orders)
                 _, _, enqueued_time, order = self.queue.get()
                 duration = time.time() - enqueued_time
-                processing_duration.record(duration, attributes={"queue": "queued_orders"})
+                print(f"I waited in queue {duration} seconds")
+                queue_wait_duration.record(duration)
                 return order
         return orderqueue.Order() # If nothing in queue, return empty Order
 

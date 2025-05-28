@@ -10,6 +10,7 @@ BOOKS = [
 # Use pip install locust
 # run locust command when in the folder where locustfile.py is while docker container of the system is running
 # add host to be http://localhost:8081 and specify nr of users
+host_address = "http://localhost:8081"
 
 def check_response(response, expect_approval=True):
     """ Checks if the response is as expected. """
@@ -56,6 +57,7 @@ def build_payload(user_name, book_items, cc_number, cc_exp, cc_cvv):
 class NonFraudulent(HttpUser):
     """ Non-fraudulent users buying books"""
     wait_time = between(3, 5)
+    host = host_address
 
     @task
     def order_1(self):
@@ -82,6 +84,7 @@ class NonFraudulent(HttpUser):
 class Fraudulent(HttpUser):
     """Fraudulent users buying books"""
     wait_time = between(3, 5)
+    host = host_address
 
     @task
     def order_1(self):
@@ -132,6 +135,7 @@ class Fraudulent(HttpUser):
 class Mixed(HttpUser):
     """ Non-fraudulent and fraudulent users buying books"""
     wait_time = between(3, 5)
+    host = host_address
 
     @task
     def order_1(self):
@@ -156,6 +160,7 @@ class Mixed(HttpUser):
 class Conflicting(HttpUser):
     """ Non-fraudulent users buying the same book"""
     wait_time = between(3, 5)
+    host = host_address
 
     @task
     def order_1(self):

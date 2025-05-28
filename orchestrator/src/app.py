@@ -72,10 +72,35 @@ metrics.set_meter_provider(meterProvider)
 
 tracer = trace.get_tracer("orchestrator.tracer")
 meter = metrics.get_meter("orchestrator.meter")
+
+number_of_currently_processed_orders = 0
+
+class MeasurementItem:
+    def __init__(self, value):
+        self.value = value
+        self.attributes = {}
+
+class MeasurementIterable:
+    def __init__(self):
+        self.items = [MeasurementItem(0)]
+
+    def __add__(self, value):
+        self.items.append(MeasurementItem(value))
+
+    def __iter__(self):
+        return iter(self.items)
+
+measurementIterable = MeasurementIterable()
+
+def get_currently_processing_orders(options):
+    return measurementIterable
+
 # Metrics
 order_counter = meter.create_counter(name="orders.total", description="Total number of orders processed.", unit="1") # Counter
 rejected_counter = meter.create_counter(name="orders.rejected", description="Total number of rejected orders.", unit="1") # Counter
 processing_duration = meter.create_histogram(name="orders.processing_duration", description="Duration of processing.", unit="s") # Histogram
+currently_processed_orders = meter.create_observable_gauge(name="orchestrator.currently_processed_orders_gauge", callbacks=[get_currently_processing_orders],description="Current number of orders being processed (gauge).")
+number_of_currently_processed_orders_updown = meter.create_up_down_counter(name="orchestrator.currently_processed_orders", description="Number of currently processed orders.") #UpDownCounter
 
 
 active_orders = {}
@@ -99,7 +124,8 @@ class OrchestratorService(orchestrator_grpc.OrchestratorServiceServicer):
     def AcceptOrderConfirmation(self, request, context):
         order_id = request.orderId
         print(f"Received order confirmation for order {order_id}")
-        active_orders[order_id]["status"] = "confirmed"
+        if order_id in active_orders:
+            active_orders[order_id]["status"] = "confirmed"
         return Empty()
 
 # Sends new order to transaction verification service using gRPC
@@ -231,6 +257,10 @@ def checkout():
     Responds with a JSON object containing the order ID, status, and suggested books.
     """
     with tracer.start_as_current_span("checkout") as span:
+        number_of_currently_processed_orders_updown.add(1)
+        global number_of_currently_processed_orders
+        number_of_currently_processed_orders += 1
+        measurementIterable.__add__(number_of_currently_processed_orders)
         start_time = time.time()
 
         # Get request object data to json
@@ -301,7 +331,7 @@ def checkout():
         if not order_confirmed:
             failure_message = active_orders[order_id]["message"]
             span.set_attribute("order.failure_reason", failure_message)
-            order_counter.add(1)
+            #order_counter.add(1)
             rejected_counter.add(1)
             order_status_response = {
                 'orderId': order_id,
@@ -311,10 +341,14 @@ def checkout():
 
         processing_time = time.time() - start_time
         processing_duration.record(processing_time)
+        print("orchestrator processing time:", processing_time)
 
         # Delete current order from dictionary of active orders
         del active_orders[order_id]
 
+        number_of_currently_processed_orders_updown.add(-1)
+        number_of_currently_processed_orders -= 1
+        measurementIterable.__add__(number_of_currently_processed_orders)
         return order_status_response
 
 
